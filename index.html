@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HENRY CAR'S - Mecánica Automotriz</title>
     
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#d90429">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3204/3204003.png">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <style>
         /* --- NUEVA PALETA DE COLORES HENRY CAR'S --- */
@@ -25,14 +30,14 @@
             background-color: var(--bg-page);
             color: var(--text);
             margin: 0;
-            padding: 0; /* Quitamos el padding para el banner superior */
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
         }
 
-        /* --- NUEVO ENCABEZADO TIPO LOGO --- */
+        /* --- ENCABEZADO TIPO LOGO --- */
         .top-banner {
             background-color: var(--primary);
             width: 100%;
@@ -155,39 +160,21 @@
 
         #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px;}
 
-        /* ========================================= */
-        /* --- OPTIMIZACIÓN PARA MÓVILES (NUEVO) --- */
-        /* ========================================= */
+        /* Modal Escáner OCR */
+        #ocr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
+        #video-preview { width: 90%; max-width: 400px; background: black; border-radius: 12px; border: 3px solid var(--secondary); }
+        .ocr-btns { display: flex; gap: 15px; margin-top: 20px; }
+
+        /* OPTIMIZACIÓN MÓVIL */
         @media screen and (max-width: 768px) {
-            .top-banner h1 {
-                font-size: 2rem;
-            }
-            .top-banner p {
-                font-size: 0.9rem;
-                letter-spacing: 2px;
-            }
-            .container {
-                padding: 20px;
-                width: 95%;
-            }
-            .form-row {
-                flex-direction: column; 
-                gap: 0;
-            }
-            .form-group {
-                margin-bottom: 15px;
-            }
-            .tabs {
-                gap: 8px;
-            }
-            .tabs button {
-                flex: 1 1 45%; 
-                padding: 10px;
-                font-size: 14px;
-            }
-            h2 {
-                font-size: 20px;
-            }
+            .top-banner h1 { font-size: 2rem; }
+            .top-banner p { font-size: 0.9rem; letter-spacing: 2px; }
+            .container { padding: 20px; width: 95%; }
+            .form-row { flex-direction: column; gap: 0; }
+            .form-group { margin-bottom: 15px; }
+            .tabs { gap: 8px; }
+            .tabs button { flex: 1 1 45%; padding: 10px; font-size: 14px; }
+            h2 { font-size: 20px; }
         }
     </style>
 </head>
@@ -219,7 +206,10 @@
                     </div>
                     <div class="form-group">
                         <label>PLACA *</label>
-                        <input type="text" id="placa" required placeholder="Ej: ABC123" style="text-transform: uppercase;">
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="placa" required placeholder="Ej: ABC123" style="text-transform: uppercase; flex: 1;">
+                            <button type="button" id="btn-scan" style="background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-weight: bold;">📷 Escanear</button>
+                        </div>
                     </div>
                 </div>
 
@@ -318,9 +308,29 @@
         
     </div>
 
+    <div id="ocr-modal">
+        <h3 style="color: white; margin-bottom: 10px;">Escáner de Placa</h3>
+        <video id="video-preview" autoplay playsinline></video>
+        <div class="ocr-btns">
+            <button type="button" id="btn-capture" class="btn-submit" style="width: auto; padding: 10px 20px;">📸 Capturar y Leer</button>
+            <button type="button" id="btn-close-scan" class="btn-submit" style="width: auto; padding: 10px 20px; background: #555;">❌ Cancelar</button>
+        </div>
+        <p id="ocr-status" style="color: white; margin-top: 15px; font-weight: bold; text-align: center;"></p>
+        <canvas id="canvas-capture" style="display: none;"></canvas>
+    </div>
+
     <div id="toast">¡Acción realizada con éxito!</div>
 
     <script>
+        // Registrar el Service Worker (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => console.log('PWA registrada', reg))
+                .catch(err => console.error('PWA error', err));
+            });
+        }
+
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('active'));
@@ -342,6 +352,63 @@
         window.addEventListener('online', () => {
             document.getElementById('offline-indicator').style.display = 'none';
             showToast("¡Conectado! Sincronizando...");
+        });
+
+        // === LÓGICA DEL ESCÁNER DE PLACAS (OCR) ===
+        const video = document.getElementById('video-preview');
+        const canvas = document.getElementById('canvas-capture');
+        const ocrModal = document.getElementById('ocr-modal');
+        const ocrStatus = document.getElementById('ocr-status');
+        let cameraStream = null;
+
+        document.getElementById('btn-scan').addEventListener('click', async () => {
+            ocrModal.style.display = 'flex';
+            ocrStatus.innerText = "Abriendo cámara...";
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = cameraStream;
+                ocrStatus.innerText = "Apunta a la placa y presiona Capturar";
+            } catch (err) {
+                ocrStatus.innerText = "Error accediendo a la cámara. Revisa los permisos.";
+            }
+        });
+
+        document.getElementById('btn-close-scan').addEventListener('click', () => {
+            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+            ocrModal.style.display = 'none';
+        });
+
+        document.getElementById('btn-capture').addEventListener('click', async () => {
+            ocrStatus.innerText = "Procesando imagen con IA... (Esto puede tardar unos segundos)";
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            try {
+                const result = await Tesseract.recognize(imageData, 'eng', {
+                    logger: m => {
+                        if(m.status === 'recognizing text') {
+                            ocrStatus.innerText = `Leyendo texto: ${Math.round(m.progress * 100)}%`;
+                        }
+                    }
+                });
+                
+                const rawText = result.data.text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                const plateMatch = rawText.match(/[A-Z]{3}\d{2}[A-Z0-9]/); // Patrón placas 3 letras y números
+                
+                if (plateMatch) {
+                    document.getElementById('placa').value = plateMatch[0];
+                    showToast("¡Placa detectada exitosamente!");
+                    document.getElementById('btn-close-scan').click();
+                } else {
+                    ocrStatus.innerText = "No se encontró formato de placa claro. Intenta de nuevo acercando la cámara.";
+                }
+            } catch (err) {
+                ocrStatus.innerText = "Error en el reconocimiento.";
+            }
         });
     </script>
 
@@ -431,7 +498,8 @@
             });
         }
 
-        function renderTabla(datosArray, contenedorHTML) {
+        // --- Render de Tabla adaptado para resaltar Placas ---
+        function renderTabla(datosArray, contenedorHTML, placaResaltada = null) {
             let tablaHTML = `
                 <table>
                     <thead>
@@ -463,10 +531,14 @@
                 let f_km = res.kilometraje || res.KILOMETRAJE || res.Kilometraje || '-';
                 let f_desc = res.descripcion || res['DESCRIPCIÓN DEL SERVICIO'] || res['DESCRIPCION DEL SERVICIO'] || res.DESCRIPCION || '-';
 
+                let estiloPlaca = (placaResaltada && f_placa === placaResaltada) 
+                    ? "background-color: var(--secondary); color: white; padding: 4px 8px; border-radius: 4px;" 
+                    : "color: var(--secondary);";
+
                 tablaHTML += `
                     <tr>
                         <td style="white-space: nowrap; font-weight: bold;">${f_fecha}</td>
-                        <td style="color: var(--secondary); font-weight: bold; font-size: 16px;">${f_placa}</td>
+                        <td style="font-weight: bold; font-size: 16px;"><span style="${estiloPlaca}">${f_placa}</span></td>
                         <td>${f_cliente}</td>
                         <td>${f_marca} ${f_linea}</td>
                         <td>${f_km}</td>
@@ -479,13 +551,14 @@
             contenedorHTML.innerHTML = tablaHTML;
         }
 
+        // --- BÚSQUEDA FLEXIBLE RESTAURADA + DISEÑO DE HISTORIAL ---
         document.getElementById('btn-ejecutar-busqueda').addEventListener('click', async () => {
             const field = document.getElementById('searchField').value;
             const searchValue = document.getElementById('searchValue').value.trim().toLowerCase();
             const resultsDiv = document.getElementById('searchResults');
 
             if (!searchValue) { alert("Ingresa un valor para buscar."); return; }
-            resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando...</p>';
+            resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando en el sistema...</p>';
 
             try {
                 const querySnapshot = await getDocs(collection(db, "registros_taller"));
@@ -504,7 +577,22 @@
                     resultsDiv.innerHTML = '<p class="no-results">❌ No se encontraron resultados.</p>';
                 } else {
                     resultados = ordenarPorFecha(resultados);
-                    renderTabla(resultados, resultsDiv);
+                    
+                    if (field === 'placa') {
+                        let placaDetectada = resultados[0].placa || resultados[0].PLACA || searchValue.toUpperCase();
+                        
+                        const tituloHistorial = `
+                            <h3 style="color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 10px; margin-top: 15px;">
+                                🚘 Historial del vehículo: <span style="color: var(--secondary)">${placaDetectada}</span>
+                            </h3>`;
+                        resultsDiv.innerHTML = tituloHistorial;
+                        
+                        const containerTemp = document.createElement('div');
+                        renderTabla(resultados, containerTemp, placaDetectada);
+                        resultsDiv.appendChild(containerTemp);
+                    } else {
+                        renderTabla(resultados, resultsDiv);
+                    }
                 }
             } catch (error) {
                 console.error("Error: ", error);
@@ -675,21 +763,19 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // --- 5C. NUEVA FUNCIÓN: EXPORTAR A EXCEL ---
+        // --- EXPORTAR A EXCEL ---
         document.getElementById('btn-exportar').addEventListener('click', async () => {
             const statusText = document.getElementById('import-status');
             statusText.style.color = "var(--primary)";
             statusText.innerText = "⏳ Generando archivo Excel...";
 
             try {
-                // Obtenemos todos los datos de Firebase
                 const querySnapshot = await getDocs(collection(db, "registros_taller"));
-                let registrosMap = new Map(); // Usaremos un Map para evitar filas repetidas
+                let registrosMap = new Map(); 
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
-                    // Formatear fecha correctamente
                     let f_fecha = data.fecha || data.FECHA || data.Fecha || '-';
                     if (typeof f_fecha === 'number') {
                         let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
@@ -698,9 +784,8 @@
                     }
                     
                     const placa = data.placa || data.PLACA || data.Placa || '';
-                    const claveUnica = `${placa}-${f_fecha}`; // Clave combinada para evitar datos repetidos
+                    const claveUnica = `${placa}-${f_fecha}`; 
 
-                    // Si no está registrado en el map, lo agregamos organizado con sus encabezados oficiales
                     if (!registrosMap.has(claveUnica)) {
                         registrosMap.set(claveUnica, {
                             "FECHA": f_fecha,
@@ -715,10 +800,7 @@
                     }
                 });
 
-                // Convertimos el Map de vuelta a un arreglo
                 const registrosExportar = Array.from(registrosMap.values());
-                
-                // Ordenar del más reciente al más antiguo
                 registrosExportar.sort((a, b) => new Date(b.FECHA || 0) - new Date(a.FECHA || 0));
 
                 if (registrosExportar.length === 0) {
@@ -727,12 +809,10 @@
                     return;
                 }
 
-                // Generar el Excel usando la librería SheetJS
                 const worksheet = XLSX.utils.json_to_sheet(registrosExportar);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, "BASE DE DATOS");
                 
-                // Forzar la descarga en el navegador
                 XLSX.writeFile(workbook, "Base_de_Datos_Henry_Cars.xlsx");
                 
                 statusText.style.color = "#10b981";
