@@ -68,6 +68,7 @@
             width: 90%;
             max-width: 850px; 
             margin-bottom: 40px;
+            box-sizing: border-box;
         }
 
         h2 { 
@@ -89,6 +90,8 @@
             margin-bottom: 25px;
             gap: 12px;
             flex-wrap: wrap;
+            width: 90%;
+            max-width: 850px;
         }
         .tabs button {
             background: #edf2f4;
@@ -151,6 +154,41 @@
         @keyframes fadeoutToast { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
 
         #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px;}
+
+        /* ========================================= */
+        /* --- OPTIMIZACIÓN PARA MÓVILES (NUEVO) --- */
+        /* ========================================= */
+        @media screen and (max-width: 768px) {
+            .top-banner h1 {
+                font-size: 2rem;
+            }
+            .top-banner p {
+                font-size: 0.9rem;
+                letter-spacing: 2px;
+            }
+            .container {
+                padding: 20px;
+                width: 95%;
+            }
+            .form-row {
+                flex-direction: column; /* Apila los campos uno debajo del otro */
+                gap: 0;
+            }
+            .form-group {
+                margin-bottom: 15px;
+            }
+            .tabs {
+                gap: 8px;
+            }
+            .tabs button {
+                flex: 1 1 45%; /* Hace que los botones se vean en 2 columnas */
+                padding: 10px;
+                font-size: 14px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -264,7 +302,7 @@
                 <h3 style="margin-top:0; color:var(--primary)">📁 Importar Excel Local</h3>
                 <p style="font-size: 14px; color: #475569;">Sube tu archivo .xlsx o .xlsm para importar registros masivos.</p>
                 <div class="form-group">
-                    <input type="file" id="excelFile" accept=".xlsx, .xls, .xlsm" style="background: white;">
+                    <input type="file" id="excelFile" accept=".xlsx, .xls, .xlsm" style="background: white; border: 1px solid #ccc; width: 100%; box-sizing: border-box; padding: 10px;">
                 </div>
                 <button class="btn-submit btn-primary" id="btn-importar">📤 Importar Archivo</button>
             </div>
