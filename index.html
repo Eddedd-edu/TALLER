@@ -171,7 +171,7 @@
                 width: 95%;
             }
             .form-row {
-                flex-direction: column; /* Apila los campos uno debajo del otro */
+                flex-direction: column; 
                 gap: 0;
             }
             .form-group {
@@ -181,7 +181,7 @@
                 gap: 8px;
             }
             .tabs button {
-                flex: 1 1 45%; /* Hace que los botones se vean en 2 columnas */
+                flex: 1 1 45%; 
                 padding: 10px;
                 font-size: 14px;
             }
@@ -305,6 +305,12 @@
                     <input type="file" id="excelFile" accept=".xlsx, .xls, .xlsm" style="background: white; border: 1px solid #ccc; width: 100%; box-sizing: border-box; padding: 10px;">
                 </div>
                 <button class="btn-submit btn-primary" id="btn-importar">📤 Importar Archivo</button>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid var(--secondary);">
+                <h3 style="margin-top:0; color:var(--secondary)">📊 Exportar Base de Datos</h3>
+                <p style="font-size: 14px; color: #475569;">Descarga toda la base de datos en formato Excel (.xlsx), organizada y sin duplicados.</p>
+                <button class="btn-submit" id="btn-exportar" style="background: var(--secondary);">📥 Exportar a Excel</button>
             </div>
             
             <p id="import-status" style="text-align: center; font-weight: bold; margin-top: 15px;"></p>
@@ -667,6 +673,77 @@
                 showToast("Importación de Excel finalizada.");
             };
             reader.readAsArrayBuffer(file);
+        });
+
+        // --- 5C. NUEVA FUNCIÓN: EXPORTAR A EXCEL ---
+        document.getElementById('btn-exportar').addEventListener('click', async () => {
+            const statusText = document.getElementById('import-status');
+            statusText.style.color = "var(--primary)";
+            statusText.innerText = "⏳ Generando archivo Excel...";
+
+            try {
+                // Obtenemos todos los datos de Firebase
+                const querySnapshot = await getDocs(collection(db, "registros_taller"));
+                let registrosMap = new Map(); // Usaremos un Map para evitar filas repetidas
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    // Formatear fecha correctamente
+                    let f_fecha = data.fecha || data.FECHA || data.Fecha || '-';
+                    if (typeof f_fecha === 'number') {
+                        let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
+                        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                        f_fecha = d.toISOString().split('T')[0];
+                    }
+                    
+                    const placa = data.placa || data.PLACA || data.Placa || '';
+                    const claveUnica = `${placa}-${f_fecha}`; // Clave combinada para evitar datos repetidos
+
+                    // Si no está registrado en el map, lo agregamos organizado con sus encabezados oficiales
+                    if (!registrosMap.has(claveUnica)) {
+                        registrosMap.set(claveUnica, {
+                            "FECHA": f_fecha,
+                            "PLACA": placa,
+                            "NOMBRE Y APELLIDOS": data.nombre || data['NOMBRE Y APELLIDOS'] || data.NOMBRE || data.cedula || '',
+                            "No. IDENTIFICACIÓN": data.cedula || data['No. IDENTIFICACIÓN'] || data.CEDULA || '',
+                            "MARCA": data.marca || data.MARCA || data.Marca || '',
+                            "LINEA": data.linea || data.LINEA || data.Linea || '',
+                            "KILOMETRAJE": data.kilometraje || data.KILOMETRAJE || data.Kilometraje || '',
+                            "DESCRIPCIÓN DEL SERVICIO": data.descripcion || data['DESCRIPCIÓN DEL SERVICIO'] || data.DESCRIPCION || ''
+                        });
+                    }
+                });
+
+                // Convertimos el Map de vuelta a un arreglo
+                const registrosExportar = Array.from(registrosMap.values());
+                
+                // Ordenar del más reciente al más antiguo
+                registrosExportar.sort((a, b) => new Date(b.FECHA || 0) - new Date(a.FECHA || 0));
+
+                if (registrosExportar.length === 0) {
+                    statusText.style.color = "var(--secondary)";
+                    statusText.innerText = "⚠️ No hay datos guardados para exportar.";
+                    return;
+                }
+
+                // Generar el Excel usando la librería SheetJS
+                const worksheet = XLSX.utils.json_to_sheet(registrosExportar);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "BASE DE DATOS");
+                
+                // Forzar la descarga en el navegador
+                XLSX.writeFile(workbook, "Base_de_Datos_Henry_Cars.xlsx");
+                
+                statusText.style.color = "#10b981";
+                statusText.innerText = `✅ ¡Excel exportado con éxito! Se descargaron ${registrosExportar.length} registros únicos.`;
+                showToast("Base de datos exportada con éxito.");
+
+            } catch (error) {
+                console.error("Error al exportar: ", error);
+                statusText.style.color = "var(--secondary)";
+                statusText.innerText = "❌ Hubo un error al intentar generar el archivo Excel.";
+            }
         });
     </script>
 </body>
