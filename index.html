@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HENRY CAR'S - Mecánica Automotriz</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        /* --- NUEVA PALETA DE COLORES HENRY CAR'S --- */
+        :root {
+            --primary: #0a1128; /* Azul Oscuro del Logo */
+            --primary-hover: #1c2541;
+            --secondary: #d90429; /* Rojo Vibrante del Logo */
+            --secondary-hover: #ef233c;
+            --sheets: #0f9d58; 
+            --bg-page: #f4f6f9; 
+            --text: #2b2d42;
+            --card-bg: #ffffff;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text);
+            margin: 0;
+            padding: 0; /* Quitamos el padding para el banner superior */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- NUEVO ENCABEZADO TIPO LOGO --- */
+        .top-banner {
+            background-color: var(--primary);
+            width: 100%;
+            padding: 25px 0;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            border-bottom: 5px solid var(--secondary);
+        }
+        .top-banner h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 3rem;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .top-banner p {
+            color: var(--secondary);
+            margin: 5px 0 0 0;
+            font-size: 1.2rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .container {
+            background: var(--card-bg);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 850px; 
+            margin-bottom: 40px;
+        }
+
+        h2 { 
+            text-align: center; 
+            color: var(--primary); 
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 2px solid #edf2f4;
+            padding-bottom: 10px;
+        }
+        
+        /* Pestañas de Navegación */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .tabs button {
+            background: #edf2f4;
+            color: var(--primary);
+            border: 2px solid transparent;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .tabs button:hover {
+            background: #e2eafc;
+            transform: translateY(-2px);
+        }
+        .tabs button.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(10, 17, 40, 0.3);
+        }
+        
+        /* Animaciones */
+        .tab-content { display: none; animation: fadeIn 0.4s ease-out forwards; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Formularios */
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-group { flex: 1; margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; color: var(--primary); }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 12px; border: 2px solid #edf2f4; border-radius: 8px; box-sizing: border-box; font-size: 15px; transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none; border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(217, 4, 41, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%; padding: 15px; background: var(--secondary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-submit:hover { background: var(--secondary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(217, 4, 41, 0.4); }
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(10, 17, 40, 0.4); }
+        .btn-sheets { background: var(--sheets); box-shadow: 0 4px 10px rgba(15, 157, 88, 0.3); }
+        .btn-sheets:hover { background: #0b8043; }
+        
+        /* Tablas */
+        .results-container { margin-top: 25px; overflow-x: auto; border-radius: 8px; max-height: 500px; border: 1px solid #edf2f4; }
+        table { width: 100%; border-collapse: collapse; background: white; min-width: 700px; }
+        th, td { padding: 14px 15px; text-align: left; border-bottom: 1px solid #edf2f4; font-size: 14px; }
+        th { background-color: var(--primary); color: white; font-weight: 700; position: sticky; top: 0; z-index: 1; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; }
+        tr:hover { background-color: #f8f9fa; }
+        .no-results { text-align: center; color: #8d99ae; font-style: italic; padding: 20px; font-weight: bold; }
+
+        /* Notificaciones */
+        #toast { visibility: hidden; min-width: 250px; background-color: var(--secondary); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 16px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #toast.show { visibility: visible; animation: fadeinToast 0.5s, fadeoutToast 0.5s 2.5s; }
+        @keyframes fadeinToast { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeoutToast { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+        #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px;}
+    </style>
+</head>
+<body>
+
+    <div id="offline-indicator">⚠️ MODO SIN CONEXIÓN: Datos guardados localmente. Se sincronizarán al recuperar el internet.</div>
+
+    <header class="top-banner">
+        <h1>HENRY CAR'S</h1>
+        <p>MECÁNICA AUTOMOTRIZ</p>
+    </header>
+
+    <div class="tabs">
+        <button id="btn-ingreso" class="active" onclick="switchTab('ingreso')">🚙 Nuevo Ingreso</button>
+        <button id="btn-buscar" onclick="switchTab('buscar')">🔍 Buscar</button>
+        <button id="btn-bd" onclick="switchTab('bd')">📋 Base de Datos</button>
+        <button id="btn-admin" onclick="switchTab('admin')">⚙️ Administrador</button>
+    </div>
+
+    <div class="container">
+        
+        <div id="tab-ingreso" class="tab-content active">
+            <h2>Registrar Vehículo</h2>
+            <form id="tallerForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>FECHA *</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label>PLACA *</label>
+                        <input type="text" id="placa" required placeholder="Ej: ABC123" style="text-transform: uppercase;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>NOMBRE DEL CLIENTE</label>
+                        <input type="text" id="nombre" placeholder="Opcional">
+                    </div>
+                    <div class="form-group">
+                        <label>CÉDULA</label>
+                        <input type="text" id="cedula" placeholder="Opcional">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>MARCA *</label>
+                        <input type="text" id="marca" required placeholder="Ej: Chevrolet">
+                    </div>
+                    <div class="form-group">
+                        <label>LÍNEA *</label>
+                        <input type="text" id="linea" required placeholder="Ej: Spark">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>KILOMETRAJE *</label>
+                    <input type="number" id="kilometraje" required placeholder="Ej: 50000">
+                </div>
+                <div class="form-group">
+                    <label>DESCRIPCIÓN DEL SERVICIO *</label>
+                    <textarea id="descripcion" rows="3" required placeholder="Detalla el problema o servicio realizado..."></textarea>
+                </div>
+                <button type="submit" class="btn-submit">💾 Guardar Registro</button>
+            </form>
+        </div>
+
+        <div id="tab-buscar" class="tab-content">
+            <h2>Buscador de Vehículos</h2>
+            <div class="form-row">
+                <div class="form-group" style="flex: 0.4;">
+                    <label>BUSCAR POR:</label>
+                    <select id="searchField">
+                        <option value="placa">Placa</option>
+                        <option value="cedula">Cédula</option>
+                        <option value="fecha">Fecha</option>
+                        <option value="nombre">Nombre</option>
+                        <option value="marca">Marca</option>
+                        <option value="linea">Línea</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 0.6;">
+                    <label>TÉRMINO DE BÚSQUEDA:</label>
+                    <input type="text" id="searchValue" placeholder="Escribe aquí para buscar...">
+                </div>
+            </div>
+            <button class="btn-submit btn-primary" id="btn-ejecutar-busqueda">🔍 Buscar en Sistema</button>
+            <div id="searchResults" class="results-container"></div>
+        </div>
+
+        <div id="tab-bd" class="tab-content">
+            <h2>Historial Completo</h2>
+            <p style="text-align: center; margin-bottom: 20px;">Visualiza el historial completo (Ordenado del más reciente al más antiguo).</p>
+            <button class="btn-submit btn-primary" id="btn-recargar-bd">🔄 Actualizar Lista</button>
+            <div id="bdResults" class="results-container">
+                <p class="no-results">Haz clic en "Actualizar Lista" para ver los vehículos.</p>
+            </div>
+        </div>
+
+        <div id="tab-admin" class="tab-content">
+            <h2>Panel de Administrador</h2>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--sheets);">
+                <h3 style="margin-top:0; color:var(--sheets)">🟢 Sincronizar Google Sheets</h3>
+                <p style="font-size: 14px; color: #475569;">Trae los datos desde tu hoja de cálculo en línea para actualizar la base de datos local y Firebase.</p>
+                <button class="btn-submit btn-sheets" id="btn-importar-sheets">📥 Descargar datos de Sheets</button>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary);">
+                <h3 style="margin-top:0; color:var(--primary)">📁 Importar Excel Local</h3>
+                <p style="font-size: 14px; color: #475569;">Sube tu archivo .xlsx o .xlsm para importar registros masivos.</p>
+                <div class="form-group">
+                    <input type="file" id="excelFile" accept=".xlsx, .xls, .xlsm" style="background: white;">
+                </div>
+                <button class="btn-submit btn-primary" id="btn-importar">📤 Importar Archivo</button>
+            </div>
+            
+            <p id="import-status" style="text-align: center; font-weight: bold; margin-top: 15px;"></p>
+        </div>
+        
+    </div>
+
+    <div id="toast">¡Acción realizada con éxito!</div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.getElementById('btn-' + tab).classList.add('active');
+        }
+
+        function showToast(mensaje) {
+            const toast = document.getElementById("toast");
+            toast.innerText = mensaje;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        window.addEventListener('offline', () => {
+            document.getElementById('offline-indicator').style.display = 'block';
+        });
+        window.addEventListener('online', () => {
+            document.getElementById('offline-indicator').style.display = 'none';
+            showToast("¡Conectado! Sincronizando...");
+        });
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5vO1ivxbdtGmTG8R0ZFTi-OBL1yYJzXQ",
+            authDomain: "henrycar-s.firebaseapp.com",
+            projectId: "henrycar-s",
+            storageBucket: "henrycar-s.firebasestorage.app",
+            messagingSenderId: "815993010042",
+            appId: "1:815993010042:web:24a3c529bec4ab5274c8c3",
+            measurementId: "G-S27LW3MXQ5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        enableIndexedDbPersistence(db).catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.log("Varias pestañas abiertas, modo offline solo en una.");
+            } else if (err.code == 'unimplemented') {
+                console.log("El navegador no soporta el modo offline.");
+            }
+        });
+
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCoXzEMJ80J8Z1GfbYuXQCiXSBm-Wy78IyKGZlbweBT2kqIPBT84oHQXAzBvih2X3LKQ/exec";
+
+        document.getElementById('tallerForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+            const placa = document.getElementById('placa').value.toUpperCase();
+            const fecha = document.getElementById('fecha').value;
+            
+            const data = {
+                fecha: fecha,
+                placa: placa,
+                nombre: document.getElementById('nombre').value,
+                cedula: document.getElementById('cedula').value,
+                marca: document.getElementById('marca').value,
+                linea: document.getElementById('linea').value,
+                kilometraje: document.getElementById('kilometraje').value,
+                descripcion: document.getElementById('descripcion').value,
+                timestamp: new Date()
+            };
+
+            try {
+                if (navigator.onLine) {
+                    const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fecha));
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        alert("⚠️ Ya existe un registro para la placa " + placa + " en la fecha " + fecha);
+                        return; 
+                    }
+                }
+
+                await addDoc(collection(db, "registros_taller"), data);
+                
+                if(navigator.onLine) {
+                    fetch(GOOGLE_SHEETS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    }).catch(err => console.log("Nota: Google Sheets se sincronizará luego.", err));
+                }
+
+                showToast("✅ ¡Vehículo guardado correctamente!");
+                document.getElementById('tallerForm').reset(); 
+            } catch (error) {
+                console.error("Error al guardar: ", error);
+                alert("Hubo un error al intentar guardar.");
+            }
+        });
+
+        function ordenarPorFecha(array) {
+            return array.sort((a, b) => {
+                let fechaA = new Date(a.fecha || a.FECHA || 0);
+                let fechaB = new Date(b.fecha || b.FECHA || 0);
+                return fechaB - fechaA;
+            });
+        }
+
+        function renderTabla(datosArray, contenedorHTML) {
+            let tablaHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Placa</th>
+                            <th>Cliente</th>
+                            <th>Marca / Línea</th>
+                            <th>Km</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            datosArray.forEach(res => {
+                let f_fecha = res.fecha || res.FECHA || res.Fecha || '-';
+                
+                if (typeof f_fecha === 'number') {
+                    let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
+                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                    f_fecha = d.toISOString().split('T')[0];
+                }
+
+                let f_placa = res.placa || res.PLACA || res.Placa || '-';
+                let f_cliente = res.nombre || res['NOMBRE Y APELLIDOS'] || res.NOMBRE || res.cedula || res['No. IDENTIFICACIÓN'] || 'No registrado';
+                let f_marca = res.marca || res.MARCA || res.Marca || '-';
+                let f_linea = res.linea || res.LINEA || res.Linea || '';
+                let f_km = res.kilometraje || res.KILOMETRAJE || res.Kilometraje || '-';
+                let f_desc = res.descripcion || res['DESCRIPCIÓN DEL SERVICIO'] || res['DESCRIPCION DEL SERVICIO'] || res.DESCRIPCION || '-';
+
+                tablaHTML += `
+                    <tr>
+                        <td style="white-space: nowrap; font-weight: bold;">${f_fecha}</td>
+                        <td style="color: var(--secondary); font-weight: bold; font-size: 16px;">${f_placa}</td>
+                        <td>${f_cliente}</td>
+                        <td>${f_marca} ${f_linea}</td>
+                        <td>${f_km}</td>
+                        <td style="font-size: 13px; color: #555;">${f_desc}</td>
+                    </tr>
+                `;
+            });
+
+            tablaHTML += `</tbody></table>`;
+            contenedorHTML.innerHTML = tablaHTML;
+        }
+
+        document.getElementById('btn-ejecutar-busqueda').addEventListener('click', async () => {
+            const field = document.getElementById('searchField').value;
+            const searchValue = document.getElementById('searchValue').value.trim().toLowerCase();
+            const resultsDiv = document.getElementById('searchResults');
+
+            if (!searchValue) { alert("Ingresa un valor para buscar."); return; }
+            resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando...</p>';
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "registros_taller"));
+                let resultados = [];
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let valorGuardado = data[field] || data[field.toUpperCase()] || data[field.charAt(0).toUpperCase() + field.slice(1)];
+                    
+                    if (valorGuardado && String(valorGuardado).toLowerCase().includes(searchValue)) {
+                        resultados.push(data);
+                    }
+                });
+
+                if (resultados.length === 0) {
+                    resultsDiv.innerHTML = '<p class="no-results">❌ No se encontraron resultados.</p>';
+                } else {
+                    resultados = ordenarPorFecha(resultados);
+                    renderTabla(resultados, resultsDiv);
+                }
+            } catch (error) {
+                console.error("Error: ", error);
+                resultsDiv.innerHTML = '<p class="no-results">⚠️ Error al buscar.</p>';
+            }
+        });
+
+        document.getElementById('btn-recargar-bd').addEventListener('click', async () => {
+            const bdDiv = document.getElementById('bdResults');
+            bdDiv.innerHTML = '<p class="no-results">⏳ Descargando registros...</p>';
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "registros_taller"));
+                let resultados = [];
+                querySnapshot.forEach((doc) => resultados.push(doc.data()));
+
+                if (resultados.length === 0) {
+                    bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía.</p>';
+                } else {
+                    resultados = ordenarPorFecha(resultados);
+                    renderTabla(resultados, bdDiv);
+                    showToast("¡Base de datos cargada!");
+                }
+            } catch (error) {
+                console.error("Error: ", error);
+                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al cargar los datos.</p>';
+            }
+        });
+
+        document.getElementById('btn-importar-sheets').addEventListener('click', async () => {
+            if (!navigator.onLine) {
+                alert("⚠️ Se requiere conexión a internet para importar desde Google Sheets.");
+                return;
+            }
+
+            const status = document.getElementById('import-status');
+            status.innerText = "⏳ Descargando datos desde tu archivo de Google Sheets...";
+            
+            try {
+                const response = await fetch(GOOGLE_SHEETS_URL);
+                const dataSheets = await response.json();
+                
+                status.innerText = `⏳ Evaluando ${dataSheets.length} registros para importación...`;
+                let agregados = 0, duplicados = 0;
+                
+                for (const fila of dataSheets) {
+                    const placaRaw = fila.Placa || fila.PLACA || fila.placa;
+                    const placa = placaRaw ? String(placaRaw).toUpperCase() : null;
+                    
+                    let fechaRaw = fila.Fecha || fila.FECHA || fila.fecha;
+                    let fechaStr = null;
+                    
+                    if (fechaRaw) {
+                        if (String(fechaRaw).includes("T")) {
+                            fechaStr = String(fechaRaw).split("T")[0];
+                        } else {
+                            fechaStr = String(fechaRaw);
+                        }
+                    }
+
+                    if (placa && fechaStr) {
+                        const dataEstandar = {
+                            fecha: fechaStr,
+                            placa: placa,
+                            nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || fila.nombre || '',
+                            cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || fila.cedula || '',
+                            marca: fila.Marca || fila.MARCA || fila.marca || '',
+                            linea: fila.Linea || fila.LINEA || fila.linea || '',
+                            kilometraje: fila.Kilometraje || fila.KILOMETRAJE || fila.kilometraje || '',
+                            descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || fila.descripcion || '',
+                            timestamp: new Date()
+                        };
+
+                        const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fechaStr));
+                        const snapshot = await getDocs(q);
+                        
+                        if (snapshot.empty) {
+                            await addDoc(collection(db, "registros_taller"), dataEstandar);
+                            agregados++;
+                        } else {
+                            duplicados++;
+                        }
+                    }
+                }
+                status.style.color = "var(--sheets)";
+                status.innerText = `✅ ¡Sincronización de Sheets exitosa! ${agregados} nuevos, ${duplicados} ya existían.`;
+                showToast("Datos de Sheets sincronizados.");
+            } catch (error) {
+                console.error("Error con Sheets: ", error);
+                status.style.color = "var(--secondary)";
+                status.innerText = "❌ Hubo un error al intentar leer tu Google Sheets.";
+            }
+        });
+
+        document.getElementById('btn-importar').addEventListener('click', () => {
+            if (!navigator.onLine) {
+                alert("⚠️ Se requiere conexión a internet para importar bases de datos masivas.");
+                return;
+            }
+
+            const fileInput = document.getElementById('excelFile');
+            const statusText = document.getElementById('import-status');
+            
+            if (fileInput.files.length === 0) {
+                alert("⚠️ Por favor, selecciona un archivo Excel desde tu computadora.");
+                return;
+            }
+
+            statusText.style.color = "var(--primary)";
+            statusText.innerText = "⏳ Leyendo archivo Excel...";
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                const targetSheetName = workbook.SheetNames.find(s => s.toUpperCase().includes('BASE DE DATOS')) || workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[targetSheetName];
+                const excelData = XLSX.utils.sheet_to_json(worksheet);
+                
+                statusText.innerText = `⏳ Procesando ${excelData.length} filas del archivo local...`;
+                let agregados = 0, duplicados = 0;
+
+                for (const fila of excelData) {
+                    const placaRaw = fila.Placa || fila.PLACA;
+                    const placa = placaRaw ? String(placaRaw).toUpperCase() : null;
+                    
+                    let fechaRaw = fila.Fecha || fila.FECHA; 
+                    let fechaStr = null;
+                    
+                    if (fechaRaw) {
+                        if (fechaRaw instanceof Date) {
+                            fechaRaw.setMinutes(fechaRaw.getMinutes() - fechaRaw.getTimezoneOffset());
+                            fechaStr = fechaRaw.toISOString().split('T')[0];
+                        } else {
+                            fechaStr = String(fechaRaw);
+                        }
+                    }
+
+                    if(placa && fechaStr) {
+                        const dataEstandar = {
+                            fecha: fechaStr,
+                            placa: placa,
+                            nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || '',
+                            cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || '',
+                            marca: fila.Marca || fila.MARCA || '',
+                            linea: fila.Linea || fila.LINEA || '',
+                            kilometraje: fila.Kilometraje || fila.KILOMETRAJE || '',
+                            descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || '',
+                            timestamp: new Date()
+                        };
+
+                        const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fechaStr));
+                        const snapshot = await getDocs(q);
+                        
+                        if (snapshot.empty) {
+                            await addDoc(collection(db, "registros_taller"), dataEstandar);
+                            agregados++;
+                        } else {
+                            duplicados++;
+                        }
+                    }
+                }
+                statusText.style.color = "var(--sheets)";
+                statusText.innerText = `✅ ¡Excel Local Importado! ${agregados} nuevos, ${duplicados} duplicados ignorados.`;
+                showToast("Importación de Excel finalizada.");
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
