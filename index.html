@@ -81,7 +81,7 @@
             color: var(--primary); 
             margin-top: 0;
             margin-bottom: 25px;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
             text-transform: uppercase;
             border-bottom: 2px solid #edf2f4;
@@ -102,10 +102,10 @@
             background: #edf2f4;
             color: var(--primary);
             border: 2px solid transparent;
-            padding: 12px 24px;
+            padding: 15px 24px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             transition: all 0.3s ease;
         }
@@ -127,16 +127,16 @@
         /* Formularios */
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
         .form-group { flex: 1; margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px; color: var(--primary); }
+        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 16px; color: var(--primary); }
         .form-group input, .form-group textarea, .form-group select {
-            width: 100%; padding: 12px; border: 2px solid #edf2f4; border-radius: 8px; box-sizing: border-box; font-size: 15px; transition: border-color 0.3s;
+            width: 100%; padding: 15px; border: 2px solid #edf2f4; border-radius: 8px; box-sizing: border-box; font-size: 18px; transition: border-color 0.3s;
         }
         .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
             outline: none; border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(217, 4, 41, 0.1);
         }
 
         .btn-submit {
-            width: 100%; padding: 15px; background: var(--secondary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px;
+            width: 100%; padding: 18px; background: var(--secondary); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px;
         }
         .btn-submit:hover { background: var(--secondary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(217, 4, 41, 0.4); }
         .btn-primary { background: var(--primary); }
@@ -147,18 +147,18 @@
         /* Tablas */
         .results-container { margin-top: 25px; overflow-x: auto; border-radius: 8px; max-height: 500px; border: 1px solid #edf2f4; }
         table { width: 100%; border-collapse: collapse; background: white; min-width: 700px; }
-        th, td { padding: 14px 15px; text-align: left; border-bottom: 1px solid #edf2f4; font-size: 14px; }
-        th { background-color: var(--primary); color: white; font-weight: 700; position: sticky; top: 0; z-index: 1; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; }
+        th, td { padding: 16px 15px; text-align: left; border-bottom: 1px solid #edf2f4; font-size: 16px; }
+        th { background-color: var(--primary); color: white; font-weight: 700; position: sticky; top: 0; z-index: 1; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; }
         tr:hover { background-color: #f8f9fa; }
-        .no-results { text-align: center; color: #8d99ae; font-style: italic; padding: 20px; font-weight: bold; }
+        .no-results { text-align: center; color: #8d99ae; font-style: italic; padding: 20px; font-weight: bold; font-size: 18px; }
 
         /* Notificaciones */
-        #toast { visibility: hidden; min-width: 250px; background-color: var(--secondary); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 16px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #toast { visibility: hidden; min-width: 250px; background-color: var(--secondary); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 18px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         #toast.show { visibility: visible; animation: fadeinToast 0.5s, fadeoutToast 0.5s 2.5s; }
         @keyframes fadeinToast { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
         @keyframes fadeoutToast { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
 
-        #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px;}
+        #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px; font-size: 16px;}
 
         /* Modal Escáner OCR */
         #ocr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
@@ -173,8 +173,9 @@
             .form-row { flex-direction: column; gap: 0; }
             .form-group { margin-bottom: 15px; }
             .tabs { gap: 8px; }
-            .tabs button { flex: 1 1 45%; padding: 10px; font-size: 14px; }
-            h2 { font-size: 20px; }
+            .tabs button { flex: 1 1 45%; padding: 12px; font-size: 16px; }
+            h2 { font-size: 22px; }
+            .form-actions { flex-direction: column; }
         }
     </style>
 </head>
@@ -208,7 +209,7 @@
                         <label>PLACA *</label>
                         <div style="display: flex; gap: 10px;">
                             <input type="text" id="placa" required placeholder="Ej: ABC123" style="text-transform: uppercase; flex: 1;">
-                            <button type="button" id="btn-scan" style="background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-weight: bold;">📷 Escanear</button>
+                            <button type="button" id="btn-scan" style="background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-weight: bold; font-size: 16px;">📷 Escanear</button>
                         </div>
                     </div>
                 </div>
@@ -243,7 +244,11 @@
                     <label>DESCRIPCIÓN DEL SERVICIO *</label>
                     <textarea id="descripcion" rows="3" required placeholder="Detalla el problema o servicio realizado..."></textarea>
                 </div>
-                <button type="submit" class="btn-submit">💾 Guardar Registro</button>
+                
+                <div class="form-actions" style="display: flex; gap: 15px; margin-top: 10px;">
+                    <button type="button" id="btn-cancelar" class="btn-submit" style="background-color: #6c757d; margin-top: 0; flex: 0.4;">❌ Cancelar</button>
+                    <button type="submit" class="btn-submit" style="margin-top: 0; flex: 0.6;">💾 Guardar Registro</button>
+                </div>
             </form>
         </div>
 
@@ -272,7 +277,7 @@
 
         <div id="tab-bd" class="tab-content">
             <h2>Historial Completo</h2>
-            <p style="text-align: center; margin-bottom: 20px;">Visualiza el historial completo (Ordenado del más reciente al más antiguo).</p>
+            <p style="text-align: center; margin-bottom: 20px; font-size: 16px;">Visualiza el historial completo (Ordenado del más reciente al más antiguo).</p>
             <button class="btn-submit btn-primary" id="btn-recargar-bd">🔄 Actualizar Lista</button>
             <div id="bdResults" class="results-container">
                 <p class="no-results">Haz clic en "Actualizar Lista" para ver los vehículos.</p>
@@ -284,13 +289,13 @@
             
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--sheets);">
                 <h3 style="margin-top:0; color:var(--sheets)">🟢 Sincronizar Google Sheets</h3>
-                <p style="font-size: 14px; color: #475569;">Trae los datos desde tu hoja de cálculo en línea para actualizar la base de datos local y Firebase.</p>
-                <button class="btn-submit btn-sheets" id="btn-importar-sheets">📥 Descargar datos de Sheets</button>
+                <p style="font-size: 16px; color: #475569;">Trae los datos desde tu hoja de cálculo en línea para actualizar la base de datos local y Firebase.</p>
+                <button class="btn-submit btn-sheets" id="btn-importar-sheets">📥 Descargar datos</button>
             </div>
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary);">
                 <h3 style="margin-top:0; color:var(--primary)">📁 Importar Excel Local</h3>
-                <p style="font-size: 14px; color: #475569;">Sube tu archivo .xlsx o .xlsm para importar registros masivos.</p>
+                <p style="font-size: 16px; color: #475569;">Sube tu archivo .xlsx o .xlsm para importar registros masivos.</p>
                 <div class="form-group">
                     <input type="file" id="excelFile" accept=".xlsx, .xls, .xlsm" style="background: white; border: 1px solid #ccc; width: 100%; box-sizing: border-box; padding: 10px;">
                 </div>
@@ -299,11 +304,11 @@
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid var(--secondary);">
                 <h3 style="margin-top:0; color:var(--secondary)">📊 Exportar Base de Datos</h3>
-                <p style="font-size: 14px; color: #475569;">Descarga toda la base de datos en formato Excel (.xlsx), organizada y sin duplicados.</p>
+                <p style="font-size: 16px; color: #475569;">Descarga toda la base de datos en formato Excel (.xlsx), organizada y sin duplicados.</p>
                 <button class="btn-submit" id="btn-exportar" style="background: var(--secondary);">📥 Exportar a Excel</button>
             </div>
             
-            <p id="import-status" style="text-align: center; font-weight: bold; margin-top: 15px;"></p>
+            <p id="import-status" style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 16px;"></p>
         </div>
         
     </div>
@@ -312,10 +317,10 @@
         <h3 style="color: white; margin-bottom: 10px;">Escáner de Placa</h3>
         <video id="video-preview" autoplay playsinline></video>
         <div class="ocr-btns">
-            <button type="button" id="btn-capture" class="btn-submit" style="width: auto; padding: 10px 20px;">📸 Capturar y Leer</button>
-            <button type="button" id="btn-close-scan" class="btn-submit" style="width: auto; padding: 10px 20px; background: #555;">❌ Cancelar</button>
+            <button type="button" id="btn-capture" class="btn-submit" style="width: auto; padding: 15px 20px;">📸 Capturar</button>
+            <button type="button" id="btn-close-scan" class="btn-submit" style="width: auto; padding: 15px 20px; background: #555;">❌ Cancelar</button>
         </div>
-        <p id="ocr-status" style="color: white; margin-top: 15px; font-weight: bold; text-align: center;"></p>
+        <p id="ocr-status" style="color: white; margin-top: 15px; font-weight: bold; text-align: center; font-size: 18px;"></p>
         <canvas id="canvas-capture" style="display: none;"></canvas>
     </div>
 
@@ -345,6 +350,7 @@
             toast.className = "show";
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
+        window.showToast = showToast; 
 
         window.addEventListener('offline', () => {
             document.getElementById('offline-indicator').style.display = 'block';
@@ -352,6 +358,27 @@
         window.addEventListener('online', () => {
             document.getElementById('offline-indicator').style.display = 'none';
             showToast("¡Conectado! Sincronizando...");
+        });
+
+        document.getElementById('searchField').addEventListener('change', function(e) {
+            const searchInput = document.getElementById('searchValue');
+            if(e.target.value === 'fecha') {
+                searchInput.type = 'date';
+                searchInput.value = ''; 
+            } else {
+                searchInput.type = 'text';
+                searchInput.value = '';
+                searchInput.placeholder = 'Escribe aquí para buscar...';
+            }
+        });
+
+        // --- LÓGICA DEL BOTÓN CANCELAR ---
+        document.getElementById('btn-cancelar').addEventListener('click', () => {
+            const confirmacion = confirm("¿Estás seguro de que deseas cancelar este registro y borrar los datos ingresados?");
+            if (confirmacion) {
+                document.getElementById('tallerForm').reset();
+                showToast("Los campos han sido borrados.");
+            }
         });
 
         // === LÓGICA DEL ESCÁNER DE PLACAS (OCR) ===
@@ -397,11 +424,17 @@
                 });
                 
                 const rawText = result.data.text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                const plateMatch = rawText.match(/[A-Z]{3}\d{2}[A-Z0-9]/); // Patrón placas 3 letras y números
+                const plateMatch = rawText.match(/[A-Z]{3}\d{2}[A-Z0-9]/); 
                 
                 if (plateMatch) {
-                    document.getElementById('placa').value = plateMatch[0];
+                    const placaDetectada = plateMatch[0];
+                    document.getElementById('placa').value = placaDetectada;
                     showToast("¡Placa detectada exitosamente!");
+                    
+                    if (window.autocompletarDatosVehiculo) {
+                        window.autocompletarDatosVehiculo(placaDetectada);
+                    }
+                    
                     document.getElementById('btn-close-scan').click();
                 } else {
                     ocrStatus.innerText = "No se encontró formato de placa claro. Intenta de nuevo acercando la cámara.";
@@ -440,6 +473,39 @@
         });
 
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCoXzEMJ80J8Z1GfbYuXQCiXSBm-Wy78IyKGZlbweBT2kqIPBT84oHQXAzBvih2X3LKQ/exec";
+
+        window.autocompletarDatosVehiculo = async function(placaVal) {
+            if (!placaVal || placaVal.length < 5) return;
+            try {
+                const q = query(collection(db, "registros_taller"), where("placa", "==", placaVal));
+                const snapshot = await getDocs(q);
+                
+                if (!snapshot.empty) {
+                    let registros = [];
+                    snapshot.forEach(doc => registros.push(doc.data()));
+                    registros = ordenarPorFecha(registros);
+                    const latest = registros[0];
+                    
+                    const updateFieldIfEmpty = (id, valor) => {
+                        const el = document.getElementById(id);
+                        if (!el.value && valor) el.value = valor;
+                    };
+
+                    updateFieldIfEmpty('nombre', latest.nombre || latest['NOMBRE Y APELLIDOS'] || latest.NOMBRE || '');
+                    updateFieldIfEmpty('cedula', latest.cedula || latest['No. IDENTIFICACIÓN'] || latest.CEDULA || '');
+                    updateFieldIfEmpty('marca', latest.marca || latest.MARCA || latest.Marca || '');
+                    updateFieldIfEmpty('linea', latest.linea || latest.LINEA || latest.Linea || '');
+                    
+                    window.showToast("🚗 Se cargaron datos previos de este vehículo.");
+                }
+            } catch (error) {
+                console.error("Error al autocompletar:", error);
+            }
+        };
+
+        document.getElementById('placa').addEventListener('blur', (e) => {
+            window.autocompletarDatosVehiculo(e.target.value.trim().toUpperCase());
+        });
 
         document.getElementById('tallerForm').addEventListener('submit', async (e) => {
             e.preventDefault(); 
@@ -482,7 +548,7 @@
                     }).catch(err => console.log("Nota: Google Sheets se sincronizará luego.", err));
                 }
 
-                showToast("✅ ¡Vehículo guardado correctamente!");
+                window.showToast("✅ ¡Vehículo guardado correctamente!");
                 document.getElementById('tallerForm').reset(); 
             } catch (error) {
                 console.error("Error al guardar: ", error);
@@ -498,7 +564,23 @@
             });
         }
 
-        // --- Render de Tabla adaptado para resaltar Placas ---
+        function eliminarDuplicados(arrayResultados) {
+            let mapaUnicos = new Map();
+            arrayResultados.forEach(res => {
+                let p = res.placa || res.PLACA || res.Placa || 'SIN_PLACA';
+                let f = res.fecha || res.FECHA || res.Fecha || 'SIN_FECHA';
+                
+                if (typeof f === 'number') {
+                    let d = new Date(Math.round((f - 25569) * 86400 * 1000));
+                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+                    f = d.toISOString().split('T')[0];
+                }
+                
+                mapaUnicos.set(`${p}-${f}`, res);
+            });
+            return Array.from(mapaUnicos.values());
+        }
+
         function renderTabla(datosArray, contenedorHTML, placaResaltada = null) {
             let tablaHTML = `
                 <table>
@@ -538,11 +620,11 @@
                 tablaHTML += `
                     <tr>
                         <td style="white-space: nowrap; font-weight: bold;">${f_fecha}</td>
-                        <td style="font-weight: bold; font-size: 16px;"><span style="${estiloPlaca}">${f_placa}</span></td>
+                        <td style="font-weight: bold; font-size: 18px;"><span style="${estiloPlaca}">${f_placa}</span></td>
                         <td>${f_cliente}</td>
                         <td>${f_marca} ${f_linea}</td>
                         <td>${f_km}</td>
-                        <td style="font-size: 13px; color: #555;">${f_desc}</td>
+                        <td style="font-size: 15px; color: #555;">${f_desc}</td>
                     </tr>
                 `;
             });
@@ -551,39 +633,54 @@
             contenedorHTML.innerHTML = tablaHTML;
         }
 
-        // --- BÚSQUEDA FLEXIBLE RESTAURADA + DISEÑO DE HISTORIAL ---
         document.getElementById('btn-ejecutar-busqueda').addEventListener('click', async () => {
             const field = document.getElementById('searchField').value;
-            const searchValue = document.getElementById('searchValue').value.trim().toLowerCase();
+            let searchValueRaw = document.getElementById('searchValue').value.trim().toLowerCase();
             const resultsDiv = document.getElementById('searchResults');
 
-            if (!searchValue) { alert("Ingresa un valor para buscar."); return; }
+            if (!searchValueRaw) { alert("Ingresa un valor para buscar."); return; }
             resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando en el sistema...</p>';
 
             try {
                 const querySnapshot = await getDocs(collection(db, "registros_taller"));
                 let resultados = [];
+                
+                let searchTerms = [];
+                if (field === 'placa') {
+                    searchTerms = [searchValueRaw.replace(/\s+/g, '')];
+                } else {
+                    searchTerms = searchValueRaw.split(' ').filter(term => term !== '');
+                }
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     let valorGuardado = data[field] || data[field.toUpperCase()] || data[field.charAt(0).toUpperCase() + field.slice(1)];
                     
-                    if (valorGuardado && String(valorGuardado).toLowerCase().includes(searchValue)) {
-                        resultados.push(data);
+                    if (valorGuardado) {
+                        let valorStr = String(valorGuardado).toLowerCase();
+                        if (field === 'placa') valorStr = valorStr.replace(/\s+/g, '');
+                        
+                        const coincideTodo = searchTerms.every(term => valorStr.includes(term));
+                        
+                        if (coincideTodo) {
+                            resultados.push(data);
+                        }
                     }
                 });
 
                 if (resultados.length === 0) {
                     resultsDiv.innerHTML = '<p class="no-results">❌ No se encontraron resultados.</p>';
                 } else {
+                    resultados = eliminarDuplicados(resultados);
                     resultados = ordenarPorFecha(resultados);
                     
                     if (field === 'placa') {
-                        let placaDetectada = resultados[0].placa || resultados[0].PLACA || searchValue.toUpperCase();
+                        let placaDetectada = resultados[0].placa || resultados[0].PLACA || searchTerms[0].toUpperCase();
                         
                         const tituloHistorial = `
                             <h3 style="color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 10px; margin-top: 15px;">
                                 🚘 Historial del vehículo: <span style="color: var(--secondary)">${placaDetectada}</span>
+                                <div style="font-size: 14px; color: #555; margin-top: 6px; font-weight: normal; letter-spacing: 0.5px;">(Formato de fecha: AAAA-MM-DD)</div>
                             </h3>`;
                         resultsDiv.innerHTML = tituloHistorial;
                         
@@ -612,9 +709,10 @@
                 if (resultados.length === 0) {
                     bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía.</p>';
                 } else {
+                    resultados = eliminarDuplicados(resultados);
                     resultados = ordenarPorFecha(resultados);
                     renderTabla(resultados, bdDiv);
-                    showToast("¡Base de datos cargada!");
+                    window.showToast("¡Base de datos cargada!");
                 }
             } catch (error) {
                 console.error("Error: ", error);
@@ -678,8 +776,8 @@
                     }
                 }
                 status.style.color = "var(--sheets)";
-                status.innerText = `✅ ¡Sincronización de Sheets exitosa! ${agregados} nuevos, ${duplicados} ya existían.`;
-                showToast("Datos de Sheets sincronizados.");
+                status.innerText = `✅ ¡Sincronización exitosa! ${agregados} nuevos, ${duplicados} ya existían.`;
+                window.showToast("Datos de Sheets sincronizados.");
             } catch (error) {
                 console.error("Error con Sheets: ", error);
                 status.style.color = "var(--secondary)";
@@ -758,12 +856,11 @@
                 }
                 statusText.style.color = "var(--sheets)";
                 statusText.innerText = `✅ ¡Excel Local Importado! ${agregados} nuevos, ${duplicados} duplicados ignorados.`;
-                showToast("Importación de Excel finalizada.");
+                window.showToast("Importación de Excel finalizada.");
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // --- EXPORTAR A EXCEL ---
         document.getElementById('btn-exportar').addEventListener('click', async () => {
             const statusText = document.getElementById('import-status');
             statusText.style.color = "var(--primary)";
@@ -817,7 +914,7 @@
                 
                 statusText.style.color = "#10b981";
                 statusText.innerText = `✅ ¡Excel exportado con éxito! Se descargaron ${registrosExportar.length} registros únicos.`;
-                showToast("Base de datos exportada con éxito.");
+                window.showToast("Base de datos exportada con éxito.");
 
             } catch (error) {
                 console.error("Error al exportar: ", error);
