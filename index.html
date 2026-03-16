@@ -160,9 +160,48 @@
 
         #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px; font-size: 16px;}
 
-        /* Modal Escáner OCR */
+        /* Modal Escáner OCR y Guía Visual */
         #ocr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
-        #video-preview { width: 90%; max-width: 400px; background: black; border-radius: 12px; border: 3px solid var(--secondary); }
+        
+        .video-container {
+            position: relative;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid var(--secondary);
+            background: black;
+        }
+        #video-preview {
+            width: 100%;
+            display: block;
+        }
+        /* Zona de escaneo (Recuadro Verde) */
+        .scan-guide {
+            position: absolute;
+            top: 25%;    /* Empieza en el 25% de arriba (Ignora el borde superior) */
+            left: 10%;   /* Deja un 10% de margen a los lados */
+            width: 80%;  /* Ancho del 80% */
+            height: 40%; /* Altura del 40% (Ignora el 35% inferior donde está la ciudad) */
+            border: 3px dashed #0f9d58; /* Verde Google */
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.6); /* Oscurece el resto de la cámara */
+            pointer-events: none; /* Permite clics a través de la caja */
+            box-sizing: border-box;
+            border-radius: 8px;
+        }
+        .scan-guide::after {
+            content: "Alinea letras/números aquí. Deja la ciudad fuera.";
+            position: absolute;
+            bottom: -35px;
+            left: -10%;
+            width: 120%;
+            text-align: center;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px #000;
+        }
+
         .ocr-btns { display: flex; gap: 15px; margin-top: 20px; }
 
         /* OPTIMIZACIÓN MÓVIL */
@@ -315,7 +354,10 @@
 
     <div id="ocr-modal">
         <h3 style="color: white; margin-bottom: 10px;">Escáner de Placa</h3>
-        <video id="video-preview" autoplay playsinline></video>
+        <div class="video-container">
+            <video id="video-preview" autoplay playsinline></video>
+            <div class="scan-guide"></div>
+        </div>
         <div class="ocr-btns">
             <button type="button" id="btn-capture" class="btn-submit" style="width: auto; padding: 15px 20px;">📸 Capturar</button>
             <button type="button" id="btn-close-scan" class="btn-submit" style="width: auto; padding: 15px 20px; background: #555;">❌ Cancelar</button>
@@ -381,7 +423,7 @@
             }
         });
 
-        // === LÓGICA DEL ESCÁNER DE PLACAS (OCR) ===
+        // === LÓGICA DEL ESCÁNER DE PLACAS CON RECORTE DE ZONA (OCR) ===
         const video = document.getElementById('video-preview');
         const canvas = document.getElementById('canvas-capture');
         const ocrModal = document.getElementById('ocr-modal');
@@ -392,9 +434,12 @@
             ocrModal.style.display = 'flex';
             ocrStatus.innerText = "Abriendo cámara...";
             try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                // Ideal para celulares: forzar cámara trasera si está disponible
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
+                });
                 video.srcObject = cameraStream;
-                ocrStatus.innerText = "Apunta a la placa y presiona Capturar";
+                ocrStatus.innerText = "Alinea la placa y presiona Capturar";
             } catch (err) {
                 ocrStatus.innerText = "Error accediendo a la cámara. Revisa los permisos.";
             }
@@ -406,26 +451,46 @@
         });
 
         document.getElementById('btn-capture').addEventListener('click', async () => {
-            ocrStatus.innerText = "Procesando imagen con IA... (Esto puede tardar unos segundos)";
+            ocrStatus.innerText = "Analizando zona seleccionada... (Puede tardar unos segundos)";
             
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            // 1. Obtener resolucion nativa del video de la cámara
+            const videoWidth = video.videoWidth;
+            const videoHeight = video.videoHeight;
+            
+            // 2. Calcular la zona de recorte (Debe coincidir con la guía visual CSS)
+            // CSS: top 25%, left 10%, width 80%, height 40%
+            const cropX = videoWidth * 0.10;
+            const cropY = videoHeight * 0.25;
+            const cropWidth = videoWidth * 0.80;
+            const cropHeight = videoHeight * 0.40;
+
+            // 3. Configurar el canvas para que SOLO tenga el tamaño del recorte
+            canvas.width = cropWidth;
+            canvas.height = cropHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 4. Dibujar en el canvas SOLO la parte recortada del video original
+            // drawImage(img, origen_x, origen_y, origen_ancho, origen_alto, destino_x, destino_y, destino_ancho, destino_alto)
+            ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            
+            // Convertir a imagen JPEG
             const imageData = canvas.toDataURL('image/jpeg');
             
             try {
+                // 5. Enviar a Tesseract SOLO la imagen recortada (Acelera proceso y evita textos indeseados)
                 const result = await Tesseract.recognize(imageData, 'eng', {
                     logger: m => {
                         if(m.status === 'recognizing text') {
-                            ocrStatus.innerText = `Leyendo texto: ${Math.round(m.progress * 100)}%`;
+                            ocrStatus.innerText = `Leyendo placa: ${Math.round(m.progress * 100)}%`;
                         }
                     }
                 });
                 
                 // OCR Regex que extrae la placa eliminando espacios
                 const rawText = result.data.text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                const plateMatch = rawText.match(/[A-Z]{3}\d{2}[A-Z0-9]/); 
+                
+                // Regex dinámico y flexible
+                const plateMatch = rawText.match(/[A-Z]{2,4}\d{2,4}[A-Z0-9]?/); 
                 
                 if (plateMatch) {
                     const placaDetectada = plateMatch[0];
@@ -438,10 +503,10 @@
                     
                     document.getElementById('btn-close-scan').click();
                 } else {
-                    ocrStatus.innerText = "No se encontró formato de placa claro. Intenta de nuevo acercando la cámara.";
+                    ocrStatus.innerText = "No se detectó la placa. Ajusta la cámara dentro del recuadro verde.";
                 }
             } catch (err) {
-                ocrStatus.innerText = "Error en el reconocimiento.";
+                ocrStatus.innerText = "Error procesando la imagen. Intenta de nuevo.";
             }
         });
     </script>
