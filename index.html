@@ -423,6 +423,7 @@
                     }
                 });
                 
+                // OCR Regex que extrae la placa eliminando espacios
                 const rawText = result.data.text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
                 const plateMatch = rawText.match(/[A-Z]{3}\d{2}[A-Z0-9]/); 
                 
@@ -475,9 +476,11 @@
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCoXzEMJ80J8Z1GfbYuXQCiXSBm-Wy78IyKGZlbweBT2kqIPBT84oHQXAzBvih2X3LKQ/exec";
 
         window.autocompletarDatosVehiculo = async function(placaVal) {
-            if (!placaVal || placaVal.length < 5) return;
+            // Limpia estrictamente los espacios al hacer autocompletado
+            const placaLimpia = placaVal.replace(/\s+/g, '').toUpperCase();
+            if (!placaLimpia || placaLimpia.length < 5) return;
             try {
-                const q = query(collection(db, "registros_taller"), where("placa", "==", placaVal));
+                const q = query(collection(db, "registros_taller"), where("placa", "==", placaLimpia));
                 const snapshot = await getDocs(q);
                 
                 if (!snapshot.empty) {
@@ -504,12 +507,15 @@
         };
 
         document.getElementById('placa').addEventListener('blur', (e) => {
-            window.autocompletarDatosVehiculo(e.target.value.trim().toUpperCase());
+            // Cuando salen del campo placa, borra espacios visualmente
+            e.target.value = e.target.value.replace(/\s+/g, '').toUpperCase();
+            window.autocompletarDatosVehiculo(e.target.value);
         });
 
         document.getElementById('tallerForm').addEventListener('submit', async (e) => {
             e.preventDefault(); 
-            const placa = document.getElementById('placa').value.toUpperCase();
+            // Elimina espacios estrictamente al momento de guardar
+            const placa = document.getElementById('placa').value.replace(/\s+/g, '').toUpperCase();
             const fecha = document.getElementById('fecha').value;
             
             const data = {
@@ -567,10 +573,10 @@
         function eliminarDuplicados(arrayResultados) {
             let mapaUnicos = new Map();
             arrayResultados.forEach(res => {
-                let p = res.placa || res.PLACA || res.Placa || 'SIN_PLACA';
+                let p = String(res.placa || res.PLACA || res.Placa || 'SIN_PLACA').replace(/\s+/g, '').toUpperCase();
                 let f = res.fecha || res.FECHA || res.Fecha || 'SIN_FECHA';
                 
-                if (typeof f === 'number') {
+                if (typeof f === 'number' && !isNaN(f)) {
                     let d = new Date(Math.round((f - 25569) * 86400 * 1000));
                     d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
                     f = d.toISOString().split('T')[0];
@@ -600,13 +606,13 @@
             datosArray.forEach(res => {
                 let f_fecha = res.fecha || res.FECHA || res.Fecha || '-';
                 
-                if (typeof f_fecha === 'number') {
+                if (typeof f_fecha === 'number' && !isNaN(f_fecha)) {
                     let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
                     d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
                     f_fecha = d.toISOString().split('T')[0];
                 }
 
-                let f_placa = res.placa || res.PLACA || res.Placa || '-';
+                let f_placa = String(res.placa || res.PLACA || res.Placa || '-').replace(/\s+/g, '').toUpperCase();
                 let f_cliente = res.nombre || res['NOMBRE Y APELLIDOS'] || res.NOMBRE || res.cedula || res['No. IDENTIFICACIÓN'] || 'No registrado';
                 let f_marca = res.marca || res.MARCA || res.Marca || '-';
                 let f_linea = res.linea || res.LINEA || res.Linea || '';
@@ -676,6 +682,8 @@
                     
                     if (field === 'placa') {
                         let placaDetectada = resultados[0].placa || resultados[0].PLACA || searchTerms[0].toUpperCase();
+                        // Forzar sin espacios
+                        placaDetectada = placaDetectada.replace(/\s+/g, '');
                         
                         const tituloHistorial = `
                             <h3 style="color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 10px; margin-top: 15px;">
@@ -738,7 +746,7 @@
                 
                 for (const fila of dataSheets) {
                     const placaRaw = fila.Placa || fila.PLACA || fila.placa;
-                    const placa = placaRaw ? String(placaRaw).toUpperCase() : null;
+                    const placa = placaRaw ? String(placaRaw).replace(/\s+/g, '').toUpperCase() : null;
                     
                     let fechaRaw = fila.Fecha || fila.FECHA || fila.fecha;
                     let fechaStr = null;
@@ -816,7 +824,7 @@
 
                 for (const fila of excelData) {
                     const placaRaw = fila.Placa || fila.PLACA;
-                    const placa = placaRaw ? String(placaRaw).toUpperCase() : null;
+                    const placa = placaRaw ? String(placaRaw).replace(/\s+/g, '').toUpperCase() : null;
                     
                     let fechaRaw = fila.Fecha || fila.FECHA; 
                     let fechaStr = null;
@@ -874,13 +882,13 @@
                     const data = doc.data();
                     
                     let f_fecha = data.fecha || data.FECHA || data.Fecha || '-';
-                    if (typeof f_fecha === 'number') {
+                    if (typeof f_fecha === 'number' && !isNaN(f_fecha)) {
                         let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
                         d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
                         f_fecha = d.toISOString().split('T')[0];
                     }
                     
-                    const placa = data.placa || data.PLACA || data.Placa || '';
+                    const placa = String(data.placa || data.PLACA || data.Placa || '').replace(/\s+/g, '').toUpperCase();
                     const claveUnica = `${placa}-${f_fecha}`; 
 
                     if (!registrosMap.has(claveUnica)) {
