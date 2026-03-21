@@ -10,7 +10,6 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3204/3204003.png">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <style>
         /* --- NUEVA PALETA DE COLORES HENRY CAR'S --- */
@@ -160,91 +159,6 @@
 
         #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px; font-size: 16px;}
 
-        /* Modal Escáner OCR y Guía Visual */
-        #ocr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; }
-        
-        .video-container {
-            position: relative;
-            width: 95%;
-            max-width: 450px;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 3px solid var(--secondary);
-            background: black;
-        }
-        #video-preview {
-            width: 100%;
-            display: block;
-        }
-
-        /* NUEVA Zona de escaneo (Guía Precisa con Letras/Números) */
-        .scan-guide {
-            position: absolute;
-            top: 35%;    
-            left: 5%;    
-            width: 90%;  
-            height: 25%; 
-            border: 3px solid #0f9d58; /* Verde Google */
-            box-shadow: 0 0 0 2000px rgba(0,0,0,0.7); /* Oscurece fuertemente el resto de la cámara */
-            pointer-events: none; 
-            box-sizing: border-box;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.05); /* Ligerisima claridad interior */
-        }
-        
-        .plate-format-guide {
-            display: flex;
-            width: 95%;
-            justify-content: space-evenly;
-            align-items: center;
-            height: 60%;
-        }
-
-        .char-box {
-            width: 13%;
-            height: 100%;
-            border: 2px dashed rgba(255, 255, 255, 0.6);
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .char-box.letter::before {
-            content: "A";
-            color: rgba(255,255,255,0.4);
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .char-box.number::before {
-            content: "1";
-            color: rgba(255,255,255,0.4);
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .scan-guide::after {
-            content: "Alinea las 3 letras y 3 números exactamente en los recuadros";
-            position: absolute;
-            bottom: -45px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: #fff;
-            font-size: 14px;
-            font-weight: bold;
-            text-shadow: 1px 1px 3px #000;
-            padding: 0 10px;
-            box-sizing: border-box;
-        }
-
-        .ocr-btns { display: flex; gap: 15px; margin-top: 20px; }
-
         /* OPTIMIZACIÓN MÓVIL */
         @media screen and (max-width: 768px) {
             .top-banner h1 { font-size: 2rem; }
@@ -269,7 +183,7 @@
     </header>
 
     <div class="tabs">
-        <button id="btn-ingreso" class="active" onclick="switchTab('ingreso')">🚙 Nuevo Ingreso</button>
+        <button id="btn-ingreso" class="active" onclick="switchTab('ingreso')">🏎️ Nuevo Ingreso</button>
         <button id="btn-buscar" onclick="switchTab('buscar')">🔍 Buscar</button>
         <button id="btn-bd" onclick="switchTab('bd')">📋 Base de Datos</button>
         <button id="btn-admin" onclick="switchTab('admin')">⚙️ Administrador</button>
@@ -289,7 +203,6 @@
                         <label>PLACA *</label>
                         <div style="display: flex; gap: 10px;">
                             <input type="text" id="placa" required placeholder="Ej: ABC123" style="text-transform: uppercase; flex: 1;">
-                            <button type="button" id="btn-scan" style="background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 15px; cursor: pointer; font-weight: bold; font-size: 16px;">📷 Escanear</button>
                         </div>
                     </div>
                 </div>
@@ -364,6 +277,10 @@
                 <div class="form-group" style="flex: 0.6;">
                     <label>TÉRMINO DE BÚSQUEDA:</label>
                     <input type="text" id="searchValue" placeholder="Escribe aquí para buscar...">
+                    <div id="rangoFechas" style="display:none; gap:10px;">
+                        <input type="date" id="fechaInicio">
+                        <input type="date" id="fechaFin">
+                    </div>
                 </div>
             </div>
             <button class="btn-submit btn-primary" id="btn-ejecutar-busqueda">🔍 Buscar en Sistema</button>
@@ -386,6 +303,7 @@
                 <h3 style="margin-top:0; color:var(--sheets)">🟢 Sincronizar Google Sheets</h3>
                 <p style="font-size: 16px; color: #475569;">Trae los datos desde tu hoja de cálculo en línea para actualizar la base de datos local y Firebase.</p>
                 <button class="btn-submit btn-sheets" id="btn-importar-sheets">📥 Descargar datos</button>
+                <button class="btn-submit btn-sheets" onclick="sincronizarDatos()">🔄 Sincronizar datos</button>
             </div>
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary);">
@@ -406,30 +324,6 @@
             <p id="import-status" style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 16px;"></p>
         </div>
         
-    </div>
-
-    <div id="ocr-modal">
-        <h3 style="color: white; margin-bottom: 10px;">Escáner de Placa</h3>
-        <div class="video-container">
-            <video id="video-preview" autoplay playsinline></video>
-            <div class="scan-guide">
-                <div class="plate-format-guide">
-                    <div class="char-box letter"></div>
-                    <div class="char-box letter"></div>
-                    <div class="char-box letter"></div>
-                    <div style="color: rgba(255,255,255,0.6); font-weight: bold; font-size: 24px;">-</div>
-                    <div class="char-box number"></div>
-                    <div class="char-box number"></div>
-                    <div class="char-box number"></div>
-                </div>
-            </div>
-        </div>
-        <div class="ocr-btns">
-            <button type="button" id="btn-capture" class="btn-submit" style="width: auto; padding: 15px 20px;">📸 Capturar</button>
-            <button type="button" id="btn-close-scan" class="btn-submit" style="width: auto; padding: 15px 20px; background: #555;">❌ Cancelar</button>
-        </div>
-        <p id="ocr-status" style="color: white; margin-top: 15px; font-weight: bold; text-align: center; font-size: 18px;"></p>
-        <canvas id="canvas-capture" style="display: none;"></canvas>
     </div>
 
     <div id="toast">¡Acción realizada con éxito!</div>
@@ -470,10 +364,16 @@
 
         document.getElementById('searchField').addEventListener('change', function(e) {
             const searchInput = document.getElementById('searchValue');
+            const rangoFechas = document.getElementById('rangoFechas');
+            
             if(e.target.value === 'fecha') {
-                searchInput.type = 'date';
-                searchInput.value = ''; 
+                searchInput.style.display = 'none';
+                rangoFechas.style.display = 'flex';
+                document.getElementById('fechaInicio').value = '';
+                document.getElementById('fechaFin').value = '';
             } else {
+                searchInput.style.display = 'block';
+                rangoFechas.style.display = 'none';
                 searchInput.type = 'text';
                 searchInput.value = '';
                 searchInput.placeholder = 'Escribe aquí para buscar...';
@@ -486,84 +386,6 @@
             if (confirmacion) {
                 document.getElementById('tallerForm').reset();
                 showToast("Los campos han sido borrados.");
-            }
-        });
-
-        // === LÓGICA DEL ESCÁNER DE PLACAS CON RECORTE DE ZONA (OCR) ===
-        const video = document.getElementById('video-preview');
-        const canvas = document.getElementById('canvas-capture');
-        const ocrModal = document.getElementById('ocr-modal');
-        const ocrStatus = document.getElementById('ocr-status');
-        let cameraStream = null;
-
-        document.getElementById('btn-scan').addEventListener('click', async () => {
-            ocrModal.style.display = 'flex';
-            ocrStatus.innerText = "Abriendo cámara...";
-            try {
-                // Ideal para celulares: forzar cámara trasera si está disponible
-                cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment" } 
-                });
-                video.srcObject = cameraStream;
-                ocrStatus.innerText = "Alinea la placa en la guía y presiona Capturar";
-            } catch (err) {
-                ocrStatus.innerText = "Error accediendo a la cámara. Revisa los permisos.";
-            }
-        });
-
-        document.getElementById('btn-close-scan').addEventListener('click', () => {
-            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
-            ocrModal.style.display = 'none';
-        });
-
-        document.getElementById('btn-capture').addEventListener('click', async () => {
-            ocrStatus.innerText = "Analizando zona seleccionada... (Puede tardar unos segundos)";
-            
-            const videoWidth = video.videoWidth;
-            const videoHeight = video.videoHeight;
-            
-            // --- NUEVAS COORDENADAS COINCIDENTES CON LA GUÍA VISUAL ---
-            // Coincide con: top: 35%, left: 5%, width: 90%, height: 25% del CSS
-            const cropX = videoWidth * 0.05;
-            const cropY = videoHeight * 0.35;
-            const cropWidth = videoWidth * 0.90;
-            const cropHeight = videoHeight * 0.25;
-
-            canvas.width = cropWidth;
-            canvas.height = cropHeight;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-            
-            const imageData = canvas.toDataURL('image/jpeg');
-            
-            try {
-                const result = await Tesseract.recognize(imageData, 'eng', {
-                    logger: m => {
-                        if(m.status === 'recognizing text') {
-                            ocrStatus.innerText = `Leyendo placa: ${Math.round(m.progress * 100)}%`;
-                        }
-                    }
-                });
-                
-                const rawText = result.data.text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                const plateMatch = rawText.match(/[A-Z]{2,4}\d{2,4}[A-Z0-9]?/); 
-                
-                if (plateMatch) {
-                    const placaDetectada = plateMatch[0];
-                    document.getElementById('placa').value = placaDetectada;
-                    showToast("¡Placa detectada exitosamente!");
-                    
-                    if (window.autocompletarDatosVehiculo) {
-                        window.autocompletarDatosVehiculo(placaDetectada);
-                    }
-                    
-                    document.getElementById('btn-close-scan').click();
-                } else {
-                    ocrStatus.innerText = "No se detectó la placa. Intenta alinearla exactamente en los recuadros.";
-                }
-            } catch (err) {
-                ocrStatus.innerText = "Error procesando la imagen. Intenta de nuevo.";
             }
         });
     </script>
@@ -902,41 +724,63 @@
 
         document.getElementById('btn-ejecutar-busqueda').addEventListener('click', async () => {
             const field = document.getElementById('searchField').value;
-            let searchValueRaw = document.getElementById('searchValue').value.trim().toLowerCase();
             const resultsDiv = document.getElementById('searchResults');
+            let searchValueRaw = "";
 
-            if (!searchValueRaw) { alert("Ingresa un valor para buscar."); return; }
+            if (field !== 'fecha') {
+                searchValueRaw = document.getElementById('searchValue').value.trim().toLowerCase();
+                if (!searchValueRaw) { alert("Ingresa un valor para buscar."); return; }
+            }
+
             resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando en el sistema...</p>';
 
             try {
-                // Modificado: Usar fuente central (Sheets -> FB)
                 let dataCompleta = await obtenerTodosLosRegistrosCentralizado();
                 let resultados = [];
                 let searchTerms = [];
-                
-                if (field === 'placa') {
-                    searchTerms = [searchValueRaw.replace(/\s+/g, '')];
-                } else if (field === 'fecha') {
-                    let searchDate = searchValueRaw;
-                    searchTerms = [searchDate];
-                } else {
-                    searchTerms = searchValueRaw.split(' ').filter(term => term !== '');
-                }
 
-                dataCompleta.forEach((data) => {
-                    let valorGuardado = data[field] || data[field.toUpperCase()] || data[field.charAt(0).toUpperCase() + field.slice(1)];
-                    
-                    if (valorGuardado) {
-                        let valorStr = String(valorGuardado).toLowerCase();
-                        if (field === 'placa') valorStr = valorStr.replace(/\s+/g, '');
-                        
-                        const coincideTodo = searchTerms.every(term => valorStr.includes(term));
-                        
-                        if (coincideTodo) {
-                            resultados.push(data);
-                        }
+                if (field === 'fecha') {
+                    const inicio = document.getElementById('fechaInicio').value;
+                    const fin = document.getElementById('fechaFin').value;
+
+                    if (!inicio || !fin) {
+                        alert("Selecciona ambas fechas");
+                        resultsDiv.innerHTML = '';
+                        return;
                     }
-                });
+
+                    if (inicio > fin) {
+                        alert("La fecha inicial no puede ser mayor que la final");
+                        resultsDiv.innerHTML = '';
+                        return;
+                    }
+
+                    resultados = dataCompleta.filter(data => {
+                        let f = data.fecha || data.FECHA;
+                        return f >= inicio && f <= fin;
+                    });
+                } else {
+                    if (field === 'placa') {
+                        searchTerms = [searchValueRaw.replace(/\s+/g, '')];
+                    } else {
+                        searchTerms = searchValueRaw.split(' ').filter(term => term !== '');
+                    }
+
+                    dataCompleta.forEach((data) => {
+                        let valorGuardado = data[field] || data[field.toUpperCase()] || data[field.charAt(0).toUpperCase() + field.slice(1)];
+                        
+                        if (valorGuardado) {
+                            let valorStr = String(valorGuardado).toLowerCase();
+                            if (field === 'placa') valorStr = valorStr.replace(/\s+/g, '');
+                            
+                            const coincideTodo = searchTerms.every(term => valorStr.includes(term));
+                            
+                            if (coincideTodo) {
+                                resultados.push(data);
+                            }
+                        }
+                    });
+                }
 
                 if (resultados.length === 0) {
                     resultsDiv.innerHTML = '<p class="no-results">❌ No se encontraron resultados.</p>';
@@ -944,7 +788,7 @@
                     resultados = eliminarDuplicados(resultados);
                     resultados = ordenarPorFecha(resultados);
                     
-                    if (field === 'placa') {
+                    if (field === 'placa' && field !== 'fecha') {
                         let placaDetectada = resultados[0].placa || resultados[0].PLACA || searchTerms[0].toUpperCase();
                         placaDetectada = placaDetectada.replace(/\s+/g, '');
                         
