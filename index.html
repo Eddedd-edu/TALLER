@@ -317,7 +317,7 @@
         <div id="tab-bd" class="tab-content">
             <h2>Historial Completo</h2>
             <p style="text-align: center; margin-bottom: 20px; font-size: 16px;">Visualiza el historial completo (Ordenado del más reciente al más antiguo).</p>
-            <button class="btn-submit btn-primary" id="btn-recargar-bd">🔄 Actualizar Lista y Sincronizar</button>
+            <button class="btn-submit btn-primary" id="btn-recargar-bd">🔄 Actualizar Lista</button>
             <div id="bdResults" class="results-container">
                 <p class="no-results">Haz clic en "Actualizar Lista" para ver los vehículos.</p>
             </div>
@@ -399,7 +399,7 @@
         });
         window.addEventListener('online', () => {
             document.getElementById('offline-indicator').style.display = 'none';
-            showToast("¡Conectado! Sincronizando...");
+            showToast("¡Conectado! Sincronizando en segundo plano...");
         });
 
         document.getElementById('searchField').addEventListener('change', function(e) {
@@ -533,8 +533,14 @@
             const placaLimpia = placaVal.replace(/\s+/g, '').toUpperCase();
             if (!placaLimpia || placaLimpia.length < 5) return;
             try {
+                // Al autocompletar leemos también del servidor si hay internet
+                let snapshot;
                 const q = query(collection(db, "registros_taller"), where("placa", "==", placaLimpia));
-                const snapshot = await getDocs(q);
+                if (navigator.onLine) {
+                    snapshot = await getDocsFromServer(q);
+                } else {
+                    snapshot = await getDocs(q);
+                }
                 
                 if (!snapshot.empty) {
                     let registros = [];
@@ -761,77 +767,41 @@
             }
         });
 
-        // --- SOLUCIÓN APLICADA AL BOTÓN DE ACTUALIZAR Y SINCRONIZAR ---
+        // --- SOLUCIÓN APLICADA AL BOTÓN DE ACTUALIZAR ---
         document.getElementById('btn-recargar-bd').addEventListener('click', async () => {
             const bdDiv = document.getElementById('bdResults');
-            bdDiv.innerHTML = '<p class="no-results">⏳ Sincronizando registros con el servidor...</p>';
+            bdDiv.innerHTML = '<p class="no-results">⏳ Descargando registros más recientes del servidor...</p>';
             
             try {
+                let querySnapshot;
+                
+                // Si hay internet, obligamos a descargar TODO desde el servidor (saltando la caché)
                 if (navigator.onLine) {
-                    // 1. SUBIR DATOS DE LA CACHÉ AL SERVIDOR (Si hay conexión)
-                    // Obtenemos todos los registros guardados en la caché local
-                    const cacheSnapshot = await getDocs(collection(db, "registros_taller")); 
-                    
-                    let subidos = 0;
-                    
-                    // Recorremos los datos de la caché para ver si falta subir alguno
-                    for (const docSnapshot of cacheSnapshot.docs) {
-                        const localData = docSnapshot.data();
-                        const placa = localData.placa;
-                        const fecha = localData.fecha;
-
-                        // Comprobamos en el servidor si este registro ya existe (evitar duplicados)
-                        const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fecha));
-                        const serverCheck = await getDocsFromServer(q);
-
-                        // Si no existe en el servidor, lo agregamos
-                        if (serverCheck.empty) {
-                            // Limpiamos el timestamp local para que se asigne uno nuevo en el servidor
-                            const { timestamp, ...dataToUpload } = localData; 
-                            dataToUpload.timestamp = new Date(); // Asignamos fecha/hora de subida real
-
-                            await addDoc(collection(db, "registros_taller"), dataToUpload);
-                            subidos++;
-                            console.log(`Subido desde caché: ${placa} - ${fecha}`);
-                        }
-                    }
-                    
-                    if (subidos > 0) {
-                        window.showToast(`Se sincronizaron ${subidos} registros locales a la nube.`);
-                    }
-
-                    // 2. DESCARGAR LA LISTA ACTUALIZADA DEL SERVIDOR
-                    const serverSnapshot = await getDocsFromServer(collection(db, "registros_taller"));
-                    let resultados = [];
-                    serverSnapshot.forEach((doc) => resultados.push(doc.data()));
-
-                    if (resultados.length === 0) {
-                        bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía.</p>';
-                    } else {
-                        resultados = eliminarDuplicados(resultados);
-                        resultados = ordenarPorFecha(resultados);
-                        renderTabla(resultados, bdDiv);
-                        window.showToast("¡Base de datos actualizada con el servidor!");
-                    }
-
+                    querySnapshot = await getDocsFromServer(collection(db, "registros_taller"));
                 } else {
-                    // Si NO hay internet, solo leemos la caché para mostrar algo
-                    const querySnapshot = await getDocs(collection(db, "registros_taller"));
-                    let resultados = [];
-                    querySnapshot.forEach((doc) => resultados.push(doc.data()));
+                    // Si NO hay internet, leemos la memoria local
+                    querySnapshot = await getDocs(collection(db, "registros_taller"));
+                }
+                
+                let resultados = [];
+                querySnapshot.forEach((doc) => resultados.push(doc.data()));
 
-                    if (resultados.length === 0) {
-                        bdDiv.innerHTML = '<p class="no-results">📭 No hay datos locales para mostrar.</p>';
+                if (resultados.length === 0) {
+                    bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía o no hay datos locales.</p>';
+                } else {
+                    resultados = eliminarDuplicados(resultados);
+                    resultados = ordenarPorFecha(resultados);
+                    renderTabla(resultados, bdDiv);
+                    
+                    if (navigator.onLine) {
+                        window.showToast("¡Lista actualizada desde el servidor!");
                     } else {
-                        resultados = eliminarDuplicados(resultados);
-                        resultados = ordenarPorFecha(resultados);
-                        renderTabla(resultados, bdDiv);
-                        window.showToast("Mostrando datos locales (Modo Offline)");
+                        window.showToast("Mostrando datos locales (Sin conexión)");
                     }
                 }
             } catch (error) {
-                console.error("Error al sincronizar/cargar: ", error);
-                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al procesar los datos.</p>';
+                console.error("Error al cargar los datos: ", error);
+                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al conectar con el servidor. Revisa tu internet e intenta de nuevo.</p>';
             }
         });
 
