@@ -501,7 +501,6 @@
     </script>
 
     <script type="module">
-        // IMPORTANTE: Se ha añadido 'getDocsFromServer' a las importaciones
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
         import { getFirestore, collection, addDoc, query, where, getDocs, getDocsFromServer, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -700,7 +699,6 @@
             resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando en el sistema...</p>';
 
             try {
-                // También es buena idea forzar la lectura de servidor para búsquedas si hay internet
                 let querySnapshot;
                 if (navigator.onLine) {
                     querySnapshot = await getDocsFromServer(collection(db, "registros_taller"));
@@ -763,35 +761,77 @@
             }
         });
 
-        // --- SOLUCIÓN APLICADA AL BOTÓN DE ACTUALIZAR ---
+        // --- SOLUCIÓN APLICADA AL BOTÓN DE ACTUALIZAR Y SINCRONIZAR ---
         document.getElementById('btn-recargar-bd').addEventListener('click', async () => {
             const bdDiv = document.getElementById('bdResults');
             bdDiv.innerHTML = '<p class="no-results">⏳ Sincronizando registros con el servidor...</p>';
             
             try {
-                let querySnapshot;
-                // Verificamos si hay internet. Si lo hay, forzamos la descarga del servidor saltando la caché.
                 if (navigator.onLine) {
-                    querySnapshot = await getDocsFromServer(collection(db, "registros_taller"));
-                } else {
-                    // Si estamos sin internet, leemos la caché local normalmente
-                    querySnapshot = await getDocs(collection(db, "registros_taller"));
-                }
-                
-                let resultados = [];
-                querySnapshot.forEach((doc) => resultados.push(doc.data()));
+                    // 1. SUBIR DATOS DE LA CACHÉ AL SERVIDOR (Si hay conexión)
+                    // Obtenemos todos los registros guardados en la caché local
+                    const cacheSnapshot = await getDocs(collection(db, "registros_taller")); 
+                    
+                    let subidos = 0;
+                    
+                    // Recorremos los datos de la caché para ver si falta subir alguno
+                    for (const docSnapshot of cacheSnapshot.docs) {
+                        const localData = docSnapshot.data();
+                        const placa = localData.placa;
+                        const fecha = localData.fecha;
 
-                if (resultados.length === 0) {
-                    bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía.</p>';
+                        // Comprobamos en el servidor si este registro ya existe (evitar duplicados)
+                        const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fecha));
+                        const serverCheck = await getDocsFromServer(q);
+
+                        // Si no existe en el servidor, lo agregamos
+                        if (serverCheck.empty) {
+                            // Limpiamos el timestamp local para que se asigne uno nuevo en el servidor
+                            const { timestamp, ...dataToUpload } = localData; 
+                            dataToUpload.timestamp = new Date(); // Asignamos fecha/hora de subida real
+
+                            await addDoc(collection(db, "registros_taller"), dataToUpload);
+                            subidos++;
+                            console.log(`Subido desde caché: ${placa} - ${fecha}`);
+                        }
+                    }
+                    
+                    if (subidos > 0) {
+                        window.showToast(`Se sincronizaron ${subidos} registros locales a la nube.`);
+                    }
+
+                    // 2. DESCARGAR LA LISTA ACTUALIZADA DEL SERVIDOR
+                    const serverSnapshot = await getDocsFromServer(collection(db, "registros_taller"));
+                    let resultados = [];
+                    serverSnapshot.forEach((doc) => resultados.push(doc.data()));
+
+                    if (resultados.length === 0) {
+                        bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía.</p>';
+                    } else {
+                        resultados = eliminarDuplicados(resultados);
+                        resultados = ordenarPorFecha(resultados);
+                        renderTabla(resultados, bdDiv);
+                        window.showToast("¡Base de datos actualizada con el servidor!");
+                    }
+
                 } else {
-                    resultados = eliminarDuplicados(resultados);
-                    resultados = ordenarPorFecha(resultados);
-                    renderTabla(resultados, bdDiv);
-                    window.showToast("¡Base de datos sincronizada y actualizada!");
+                    // Si NO hay internet, solo leemos la caché para mostrar algo
+                    const querySnapshot = await getDocs(collection(db, "registros_taller"));
+                    let resultados = [];
+                    querySnapshot.forEach((doc) => resultados.push(doc.data()));
+
+                    if (resultados.length === 0) {
+                        bdDiv.innerHTML = '<p class="no-results">📭 No hay datos locales para mostrar.</p>';
+                    } else {
+                        resultados = eliminarDuplicados(resultados);
+                        resultados = ordenarPorFecha(resultados);
+                        renderTabla(resultados, bdDiv);
+                        window.showToast("Mostrando datos locales (Modo Offline)");
+                    }
                 }
             } catch (error) {
-                console.error("Error: ", error);
-                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al cargar los datos.</p>';
+                console.error("Error al sincronizar/cargar: ", error);
+                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al procesar los datos.</p>';
             }
         });
 
