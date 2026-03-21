@@ -267,7 +267,22 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>MARCA *</label>
-                        <input type="text" id="marca" required placeholder="Ej: Chevrolet">
+                        <input type="text" id="marca" required placeholder="Ej: Chevrolet" list="lista-marcas">
+                        <datalist id="lista-marcas">
+                            <option value="Chevrolet"></option>
+                            <option value="Renault"></option>
+                            <option value="Mazda"></option>
+                            <option value="Toyota"></option>
+                            <option value="Kia"></option>
+                            <option value="Nissan"></option>
+                            <option value="Hyundai"></option>
+                            <option value="Ford"></option>
+                            <option value="Volkswagen"></option>
+                            <option value="Suzuki"></option>
+                            <option value="BMW"></option>
+                            <option value="Mercedes-Benz"></option>
+                            <option value="Audi"></option>
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label>LÍNEA *</label>
@@ -519,6 +534,7 @@
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
+        // MODO OFFLINE (NO MODIFICADO SEGÚN SOLICITUD)
         enableIndexedDbPersistence(db).catch((err) => {
             if (err.code == 'failed-precondition') {
                 console.log("Varias pestañas abiertas, modo offline solo en una.");
@@ -529,23 +545,145 @@
 
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCoXzEMJ80J8Z1GfbYuXQCiXSBm-Wy78IyKGZlbweBT2kqIPBT84oHQXAzBvih2X3LKQ/exec";
 
+        // ---- NUEVA FUNCIÓN CENTRALIZADA PARA LEER DATOS (SHEETS -> FIREBASE) ----
+        async function obtenerTodosLosRegistrosCentralizado() {
+            let registros = [];
+            let leidoSheets = false;
+            
+            if (navigator.onLine) {
+                try {
+                    const response = await fetch(GOOGLE_SHEETS_URL);
+                    if (!response.ok) throw new Error("HTTP Status " + response.status);
+                    const dataSheets = await response.json();
+                    
+                    registros = dataSheets.map(fila => {
+                        let f_raw = fila.Fecha || fila.FECHA || fila.fecha;
+                        let f = f_raw;
+                        if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0]; // Normalizar
+
+                        return {
+                            fecha: f,
+                            placa: String(fila.Placa || fila.PLACA || fila.placa).replace(/\s+/g, '').toUpperCase(),
+                            nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || fila.nombre || '',
+                            cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || fila.cedula || '',
+                            marca: fila.Marca || fila.MARCA || fila.marca || '',
+                            linea: fila.Linea || fila.LINEA || fila.linea || '',
+                            kilometraje: fila.Kilometraje || fila.KILOMETRAJE || fila.kilometraje || '',
+                            descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || fila.descripcion || ''
+                        };
+                    });
+                    leidoSheets = true;
+                } catch (error) {
+                    console.warn("Fallo lectura desde Google Sheets. Consultando respaldo en Firebase...", error);
+                }
+            }
+
+            // Si Sheets falló o no hay internet, usar Firebase como respaldo
+            if (!leidoSheets) {
+                let snapshot;
+                if (navigator.onLine) {
+                    snapshot = await getDocsFromServer(collection(db, "registros_taller"));
+                } else {
+                    snapshot = await getDocs(collection(db, "registros_taller"));
+                }
+                snapshot.forEach(doc => registros.push(doc.data()));
+            }
+            
+            return registros;
+        }
+
+        // --- FUNCIÓN DE SINCRONIZACIÓN AUTOMÁTICA (REQUERIMIENTO MANUAL) ---
+        window.sincronizarDatos = async function() {
+            if (!navigator.onLine) {
+                console.warn("Se requiere conexión para sincronizar.");
+                return;
+            }
+            console.log("Iniciando sincronización manual entre Sheets y Firebase...");
+            try {
+                // 1. Leer Sheets Original
+                const sheetsRes = await fetch(GOOGLE_SHEETS_URL);
+                const sheetsRaw = await sheetsRes.json();
+                
+                // 2. Leer Firebase Original
+                const fbSnapshot = await getDocsFromServer(collection(db, "registros_taller"));
+                let fbData = [];
+                fbSnapshot.forEach(doc => fbData.push({ id: doc.id, ...doc.data() }));
+
+                let mapaUnificado = new Map();
+                
+                // Unificar datos usando Placa-Fecha (Firebase primero)
+                fbData.forEach(item => {
+                    let f = item.fecha || item.FECHA;
+                    let p = String(item.placa || item.PLACA).replace(/\s+/g, '').toUpperCase();
+                    mapaUnificado.set(`${p}-${f}`, item);
+                });
+
+                // Unificar datos Sheets y guardar faltantes en Firebase
+                sheetsRaw.forEach(fila => {
+                    let f_raw = fila.Fecha || fila.FECHA || fila.fecha;
+                    let f = f_raw;
+                    if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0];
+                    let p = String(fila.Placa || fila.PLACA || fila.placa).replace(/\s+/g, '').toUpperCase();
+                    
+                    if (p && f) {
+                        let clave = `${p}-${f}`;
+                        if (!mapaUnificado.has(clave)) {
+                            let dataEstandar = {
+                                fecha: f,
+                                placa: p,
+                                nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || fila.nombre || '',
+                                cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || fila.cedula || '',
+                                marca: fila.Marca || fila.MARCA || fila.marca || '',
+                                linea: fila.Linea || fila.LINEA || fila.linea || '',
+                                kilometraje: fila.Kilometraje || fila.KILOMETRAJE || fila.kilometraje || '',
+                                descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || fila.descripcion || '',
+                                timestamp: new Date()
+                            };
+                            mapaUnificado.set(clave, dataEstandar);
+                            // Respaldo en Firebase de doc que solo estaba en Sheets
+                            addDoc(collection(db, "registros_taller"), dataEstandar);
+                        }
+                    }
+                });
+
+                // Guardar faltantes en Sheets
+                for (let [clave, data] of mapaUnificado.entries()) {
+                    let enSheets = sheetsRaw.some(fila => {
+                         let f_raw = fila.Fecha || fila.FECHA || fila.fecha;
+                         let f = f_raw;
+                         if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0];
+                         let p = String(fila.Placa || fila.PLACA || fila.placa).replace(/\s+/g, '').toUpperCase();
+                         return `${p}-${f}` === clave;
+                    });
+
+                    if (!enSheets) {
+                        // Enviamos a Sheets lo que solo estaba en Firebase
+                        fetch(GOOGLE_SHEETS_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        }).catch(e => console.log(e));
+                    }
+                }
+                console.log("Sincronización finalizada. Registros unificados:", mapaUnificado.size);
+            } catch (error) {
+                console.error("Error en sincronización:", error);
+            }
+        };
+
         window.autocompletarDatosVehiculo = async function(placaVal) {
             const placaLimpia = placaVal.replace(/\s+/g, '').toUpperCase();
             if (!placaLimpia || placaLimpia.length < 5) return;
             try {
-                // Al autocompletar leemos también del servidor si hay internet
-                let snapshot;
-                const q = query(collection(db, "registros_taller"), where("placa", "==", placaLimpia));
-                if (navigator.onLine) {
-                    snapshot = await getDocsFromServer(q);
-                } else {
-                    snapshot = await getDocs(q);
-                }
+                // Utilizamos el método unificado central (Intenta Sheets -> luego Firebase)
+                let todosLosRegistros = await obtenerTodosLosRegistrosCentralizado();
+                let registrosVehiculo = todosLosRegistros.filter(r => 
+                    String(r.placa || r.PLACA || r.Placa || '').replace(/\s+/g, '').toUpperCase() === placaLimpia
+                );
                 
-                if (!snapshot.empty) {
-                    let registros = [];
-                    snapshot.forEach(doc => registros.push(doc.data()));
-                    registros = ordenarPorFecha(registros);
+                if (registrosVehiculo.length > 0) {
+                    let registros = ordenarPorFecha(registrosVehiculo);
                     const latest = registros[0];
                     
                     const updateFieldIfEmpty = (id, valor) => {
@@ -573,10 +711,13 @@
         document.getElementById('tallerForm').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const placa = document.getElementById('placa').value.replace(/\s+/g, '').toUpperCase();
-            const fecha = document.getElementById('fecha').value;
+            
+            // Normalizar a formato DD/MM/YYYY para la base de datos visual
+            const inputFecha = document.getElementById('fecha').value; // Sale como YYYY-MM-DD
+            const fechaNormalizada = inputFecha.split('-').reverse().join('/'); // Queda DD/MM/YYYY
             
             const data = {
-                fecha: fecha,
+                fecha: fechaNormalizada,
                 placa: placa,
                 nombre: document.getElementById('nombre').value,
                 cedula: document.getElementById('cedula').value,
@@ -588,27 +729,37 @@
             };
 
             try {
-                if (navigator.onLine) {
-                    const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fecha));
-                    const querySnapshot = await getDocs(q);
+                let existeDuplicado = false;
+                
+                // Comprobar Firebase para duplicado
+                const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fechaNormalizada));
+                const querySnapshot = await getDocs(q);
 
-                    if (!querySnapshot.empty) {
-                        alert("⚠️ Ya existe un registro para la placa " + placa + " en la fecha " + fecha);
-                        return; 
+                if (!querySnapshot.empty) {
+                    existeDuplicado = true;
+                    alert("⚠️ Ya existe un registro para la placa " + placa + " en la fecha " + fechaNormalizada);
+                    return; 
+                }
+
+                // 1. Guardar primero en Google Sheets
+                if(navigator.onLine) {
+                    try {
+                        await fetch(GOOGLE_SHEETS_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        });
+                    } catch(err) {
+                        console.log("Error al intentar POST a Sheets.", err);
                     }
                 }
 
-                await addDoc(collection(db, "registros_taller"), data);
-                
-                if(navigator.onLine) {
-                    fetch(GOOGLE_SHEETS_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    }).catch(err => console.log("Nota: Google Sheets se sincronizará luego.", err));
+                // 2. Guardar luego en Firebase SOLO si no existe (ya validado con querySnapshot.empty)
+                if (querySnapshot.empty) {
+                    await addDoc(collection(db, "registros_taller"), data);
                 }
 
                 window.showToast("✅ ¡Vehículo guardado correctamente!");
@@ -705,24 +856,25 @@
             resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando en el sistema...</p>';
 
             try {
-                let querySnapshot;
-                if (navigator.onLine) {
-                    querySnapshot = await getDocsFromServer(collection(db, "registros_taller"));
-                } else {
-                    querySnapshot = await getDocs(collection(db, "registros_taller"));
-                }
-                
+                // Modificado: Usar fuente central (Sheets -> FB)
+                let dataCompleta = await obtenerTodosLosRegistrosCentralizado();
                 let resultados = [];
                 let searchTerms = [];
                 
                 if (field === 'placa') {
                     searchTerms = [searchValueRaw.replace(/\s+/g, '')];
+                } else if (field === 'fecha') {
+                    // Adaptar búsqueda de fecha si el usuario ingresó YYYY-MM-DD
+                    let searchDate = searchValueRaw;
+                    if(searchDate.includes('-')) {
+                        searchDate = searchDate.split('-').reverse().join('/'); // DD/MM/YYYY
+                    }
+                    searchTerms = [searchDate];
                 } else {
                     searchTerms = searchValueRaw.split(' ').filter(term => term !== '');
                 }
 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
+                dataCompleta.forEach((data) => {
                     let valorGuardado = data[field] || data[field.toUpperCase()] || data[field.charAt(0).toUpperCase() + field.slice(1)];
                     
                     if (valorGuardado) {
@@ -750,7 +902,6 @@
                         const tituloHistorial = `
                             <h3 style="color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 10px; margin-top: 15px;">
                                 🚘 Historial del vehículo: <span style="color: var(--secondary)">${placaDetectada}</span>
-                                <div style="font-size: 14px; color: #555; margin-top: 6px; font-weight: normal; letter-spacing: 0.5px;">(Formato de fecha: AAAA-MM-DD)</div>
                             </h3>`;
                         resultsDiv.innerHTML = tituloHistorial;
                         
@@ -770,21 +921,11 @@
         // --- SOLUCIÓN APLICADA AL BOTÓN DE ACTUALIZAR ---
         document.getElementById('btn-recargar-bd').addEventListener('click', async () => {
             const bdDiv = document.getElementById('bdResults');
-            bdDiv.innerHTML = '<p class="no-results">⏳ Descargando registros más recientes del servidor...</p>';
+            bdDiv.innerHTML = '<p class="no-results">⏳ Descargando registros más recientes (Prioridad Sheets)...</p>';
             
             try {
-                let querySnapshot;
-                
-                // Si hay internet, obligamos a descargar TODO desde el servidor (saltando la caché)
-                if (navigator.onLine) {
-                    querySnapshot = await getDocsFromServer(collection(db, "registros_taller"));
-                } else {
-                    // Si NO hay internet, leemos la memoria local
-                    querySnapshot = await getDocs(collection(db, "registros_taller"));
-                }
-                
-                let resultados = [];
-                querySnapshot.forEach((doc) => resultados.push(doc.data()));
+                // Modificado: Prioridad Sheets -> fallback Firebase
+                let resultados = await obtenerTodosLosRegistrosCentralizado();
 
                 if (resultados.length === 0) {
                     bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía o no hay datos locales.</p>';
@@ -792,19 +933,15 @@
                     resultados = eliminarDuplicados(resultados);
                     resultados = ordenarPorFecha(resultados);
                     renderTabla(resultados, bdDiv);
-                    
-                    if (navigator.onLine) {
-                        window.showToast("¡Lista actualizada desde el servidor!");
-                    } else {
-                        window.showToast("Mostrando datos locales (Sin conexión)");
-                    }
+                    window.showToast("¡Lista actualizada correctamente!");
                 }
             } catch (error) {
                 console.error("Error al cargar los datos: ", error);
-                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al conectar con el servidor. Revisa tu internet e intenta de nuevo.</p>';
+                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al cargar información.</p>';
             }
         });
 
+        // ---------------- CODIGO ADMIN EXISTENTE ----------------
         document.getElementById('btn-importar-sheets').addEventListener('click', async () => {
             if (!navigator.onLine) {
                 alert("⚠️ Se requiere conexión a internet para importar desde Google Sheets.");
@@ -818,7 +955,7 @@
                 const response = await fetch(GOOGLE_SHEETS_URL);
                 const dataSheets = await response.json();
                 
-                status.innerText = `⏳ Evaluando ${dataSheets.length} registros para importación...`;
+                status.innerText = `⏳ Evaluando ${dataSheets.length} registros para importación a Firebase...`;
                 let agregados = 0, duplicados = 0;
                 
                 for (const fila of dataSheets) {
@@ -861,8 +998,8 @@
                     }
                 }
                 status.style.color = "var(--sheets)";
-                status.innerText = `✅ ¡Sincronización exitosa! ${agregados} nuevos, ${duplicados} ya existían.`;
-                window.showToast("Datos de Sheets sincronizados.");
+                status.innerText = `✅ ¡Sincronización manual exitosa hacia Firebase! ${agregados} nuevos, ${duplicados} ya existían.`;
+                window.showToast("Datos de Sheets sincronizados en el servidor.");
             } catch (error) {
                 console.error("Error con Sheets: ", error);
                 status.style.color = "var(--secondary)";
@@ -952,12 +1089,11 @@
             statusText.innerText = "⏳ Generando archivo Excel...";
 
             try {
-                const querySnapshot = await getDocs(collection(db, "registros_taller"));
+                // Al exportar también nos aseguramos de tener la versión más reciente
+                const todosLosRegistros = await obtenerTodosLosRegistrosCentralizado();
                 let registrosMap = new Map(); 
 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    
+                todosLosRegistros.forEach((data) => {
                     let f_fecha = data.fecha || data.FECHA || data.Fecha || '-';
                     if (typeof f_fecha === 'number' && !isNaN(f_fecha)) {
                         let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
