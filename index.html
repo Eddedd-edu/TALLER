@@ -317,7 +317,7 @@
         <div id="tab-bd" class="tab-content">
             <h2>Historial Completo</h2>
             <p style="text-align: center; margin-bottom: 20px; font-size: 16px;">Visualiza el historial completo (Ordenado del más reciente al más antiguo).</p>
-            <button class="btn-submit btn-primary" id="btn-recargar-bd">🔄 Actualizar Lista</button>
+            <button class="btn-submit btn-primary" id="btn-recargar-bd">🔄 Actualizar Lista y Sincronizar</button>
             <div id="bdResults" class="results-container">
                 <p class="no-results">Haz clic en "Actualizar Lista" para ver los vehículos.</p>
             </div>
@@ -453,31 +453,23 @@
         document.getElementById('btn-capture').addEventListener('click', async () => {
             ocrStatus.innerText = "Analizando zona seleccionada... (Puede tardar unos segundos)";
             
-            // 1. Obtener resolucion nativa del video de la cámara
             const videoWidth = video.videoWidth;
             const videoHeight = video.videoHeight;
             
-            // 2. Calcular la zona de recorte (Debe coincidir con la guía visual CSS)
-            // CSS: top 25%, left 10%, width 80%, height 40%
             const cropX = videoWidth * 0.10;
             const cropY = videoHeight * 0.25;
             const cropWidth = videoWidth * 0.80;
             const cropHeight = videoHeight * 0.40;
 
-            // 3. Configurar el canvas para que SOLO tenga el tamaño del recorte
             canvas.width = cropWidth;
             canvas.height = cropHeight;
             const ctx = canvas.getContext('2d');
             
-            // 4. Dibujar en el canvas SOLO la parte recortada del video original
-            // drawImage(img, origen_x, origen_y, origen_ancho, origen_alto, destino_x, destino_y, destino_ancho, destino_alto)
             ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
             
-            // Convertir a imagen JPEG
             const imageData = canvas.toDataURL('image/jpeg');
             
             try {
-                // 5. Enviar a Tesseract SOLO la imagen recortada (Acelera proceso y evita textos indeseados)
                 const result = await Tesseract.recognize(imageData, 'eng', {
                     logger: m => {
                         if(m.status === 'recognizing text') {
@@ -486,10 +478,7 @@
                     }
                 });
                 
-                // OCR Regex que extrae la placa eliminando espacios
                 const rawText = result.data.text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                
-                // Regex dinámico y flexible
                 const plateMatch = rawText.match(/[A-Z]{2,4}\d{2,4}[A-Z0-9]?/); 
                 
                 if (plateMatch) {
@@ -512,9 +501,10 @@
     </script>
 
     <script type="module">
+        // IMPORTANTE: Se ha añadido 'getDocsFromServer' a las importaciones
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, getDocsFromServer, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA5vO1ivxbdtGmTG8R0ZFTi-OBL1yYJzXQ",
@@ -541,7 +531,6 @@
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCoXzEMJ80J8Z1GfbYuXQCiXSBm-Wy78IyKGZlbweBT2kqIPBT84oHQXAzBvih2X3LKQ/exec";
 
         window.autocompletarDatosVehiculo = async function(placaVal) {
-            // Limpia estrictamente los espacios al hacer autocompletado
             const placaLimpia = placaVal.replace(/\s+/g, '').toUpperCase();
             if (!placaLimpia || placaLimpia.length < 5) return;
             try {
@@ -572,14 +561,12 @@
         };
 
         document.getElementById('placa').addEventListener('blur', (e) => {
-            // Cuando salen del campo placa, borra espacios visualmente
             e.target.value = e.target.value.replace(/\s+/g, '').toUpperCase();
             window.autocompletarDatosVehiculo(e.target.value);
         });
 
         document.getElementById('tallerForm').addEventListener('submit', async (e) => {
             e.preventDefault(); 
-            // Elimina espacios estrictamente al momento de guardar
             const placa = document.getElementById('placa').value.replace(/\s+/g, '').toUpperCase();
             const fecha = document.getElementById('fecha').value;
             
@@ -713,10 +700,17 @@
             resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando en el sistema...</p>';
 
             try {
-                const querySnapshot = await getDocs(collection(db, "registros_taller"));
-                let resultados = [];
+                // También es buena idea forzar la lectura de servidor para búsquedas si hay internet
+                let querySnapshot;
+                if (navigator.onLine) {
+                    querySnapshot = await getDocsFromServer(collection(db, "registros_taller"));
+                } else {
+                    querySnapshot = await getDocs(collection(db, "registros_taller"));
+                }
                 
+                let resultados = [];
                 let searchTerms = [];
+                
                 if (field === 'placa') {
                     searchTerms = [searchValueRaw.replace(/\s+/g, '')];
                 } else {
@@ -747,7 +741,6 @@
                     
                     if (field === 'placa') {
                         let placaDetectada = resultados[0].placa || resultados[0].PLACA || searchTerms[0].toUpperCase();
-                        // Forzar sin espacios
                         placaDetectada = placaDetectada.replace(/\s+/g, '');
                         
                         const tituloHistorial = `
@@ -770,12 +763,21 @@
             }
         });
 
+        // --- SOLUCIÓN APLICADA AL BOTÓN DE ACTUALIZAR ---
         document.getElementById('btn-recargar-bd').addEventListener('click', async () => {
             const bdDiv = document.getElementById('bdResults');
-            bdDiv.innerHTML = '<p class="no-results">⏳ Descargando registros...</p>';
+            bdDiv.innerHTML = '<p class="no-results">⏳ Sincronizando registros con el servidor...</p>';
             
             try {
-                const querySnapshot = await getDocs(collection(db, "registros_taller"));
+                let querySnapshot;
+                // Verificamos si hay internet. Si lo hay, forzamos la descarga del servidor saltando la caché.
+                if (navigator.onLine) {
+                    querySnapshot = await getDocsFromServer(collection(db, "registros_taller"));
+                } else {
+                    // Si estamos sin internet, leemos la caché local normalmente
+                    querySnapshot = await getDocs(collection(db, "registros_taller"));
+                }
+                
                 let resultados = [];
                 querySnapshot.forEach((doc) => resultados.push(doc.data()));
 
@@ -785,7 +787,7 @@
                     resultados = eliminarDuplicados(resultados);
                     resultados = ordenarPorFecha(resultados);
                     renderTabla(resultados, bdDiv);
-                    window.showToast("¡Base de datos cargada!");
+                    window.showToast("¡Base de datos sincronizada y actualizada!");
                 }
             } catch (error) {
                 console.error("Error: ", error);
