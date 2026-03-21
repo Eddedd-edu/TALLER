@@ -612,7 +612,7 @@
                     registros = dataSheets.map(fila => {
                         let f_raw = fila.Fecha || fila.FECHA || fila.fecha;
                         let f = f_raw;
-                        if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0]; // Normalizar
+                        if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0]; // Normalizar a YYYY-MM-DD
 
                         return {
                             fecha: f,
@@ -765,9 +765,9 @@
             e.preventDefault(); 
             const placa = document.getElementById('placa').value.replace(/\s+/g, '').toUpperCase();
             
-            // Normalizar a formato DD/MM/YYYY para la base de datos visual
-            const inputFecha = document.getElementById('fecha').value; // Sale como YYYY-MM-DD
-            const fechaNormalizada = inputFecha.split('-').reverse().join('/'); // Queda DD/MM/YYYY
+            // Normalizar a formato YYYY-MM-DD (Directo del input type date)
+            const inputFecha = document.getElementById('fecha').value; 
+            const fechaNormalizada = inputFecha; 
             
             const data = {
                 fecha: fechaNormalizada,
@@ -917,11 +917,7 @@
                 if (field === 'placa') {
                     searchTerms = [searchValueRaw.replace(/\s+/g, '')];
                 } else if (field === 'fecha') {
-                    // Adaptar búsqueda de fecha si el usuario ingresó YYYY-MM-DD
                     let searchDate = searchValueRaw;
-                    if(searchDate.includes('-')) {
-                        searchDate = searchDate.split('-').reverse().join('/'); // DD/MM/YYYY
-                    }
                     searchTerms = [searchDate];
                 } else {
                     searchTerms = searchValueRaw.split(' ').filter(term => term !== '');
