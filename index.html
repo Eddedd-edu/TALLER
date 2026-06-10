@@ -1,1041 +1,1416 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HENRY CAR'S - Mecánica Automotriz</title>
-    
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#d90429">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3204/3204003.png">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <style>
-        /* --- NUEVA PALETA DE COLORES HENRY CAR'S --- */
-        :root {
-            --primary: #0a1128; /* Azul Oscuro del Logo */
-            --primary-hover: #1c2541;
-            --secondary: #d90429; /* Rojo Vibrante del Logo */
-            --secondary-hover: #ef233c;
-            --sheets: #0f9d58; 
-            --bg-page: #f4f6f9; 
-            --text: #2b2d42;
-            --card-bg: #ffffff;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-page);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HENRY CAR'S – Mecánica Automotriz</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0a1128">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root {
+  --primary: #0a1128;
+  --primary-light: #1c2541;
+  --red: #d90429;
+  --red-hover: #b00020;
+  --green: #0f9d58;
+  --green-hover: #0b7a43;
+  --bg: #f0f2f7;
+  --surface: #ffffff;
+  --border: rgba(10,17,40,0.12);
+  --text: #1a1d2e;
+  --text-muted: #6b7280;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
 
-        /* --- ENCABEZADO TIPO LOGO --- */
-        .top-banner {
-            background-color: var(--primary);
-            width: 100%;
-            padding: 25px 0;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            margin-bottom: 30px;
-            border-bottom: 5px solid var(--secondary);
-        }
-        .top-banner h1 {
-            color: #ffffff;
-            margin: 0;
-            font-size: 3rem;
-            font-weight: 900;
-            font-style: italic;
-            letter-spacing: 2px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        .top-banner p {
-            color: var(--secondary);
-            margin: 5px 0 0 0;
-            font-size: 1.2rem;
-            font-weight: 900;
-            letter-spacing: 4px;
-        }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* --- CONTENEDOR PRINCIPAL --- */
-        .container {
-            background: var(--card-bg);
-            padding: 35px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 850px; 
-            margin-bottom: 40px;
-            box-sizing: border-box;
-        }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-        h2 { 
-            text-align: center; 
-            color: var(--primary); 
-            margin-top: 0;
-            margin-bottom: 25px;
-            font-size: 26px;
-            font-weight: bold;
-            text-transform: uppercase;
-            border-bottom: 2px solid #edf2f4;
-            padding-bottom: 10px;
-        }
-        
-        /* Pestañas de Navegación */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 25px;
-            gap: 12px;
-            flex-wrap: wrap;
-            width: 90%;
-            max-width: 850px;
-        }
-        .tabs button {
-            background: #edf2f4;
-            color: var(--primary);
-            border: 2px solid transparent;
-            padding: 15px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        .tabs button:hover {
-            background: #e2eafc;
-            transform: translateY(-2px);
-        }
-        .tabs button.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px rgba(10, 17, 40, 0.3);
-        }
-        
-        /* Animaciones */
-        .tab-content { display: none; animation: fadeIn 0.4s ease-out forwards; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Formularios */
-        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-group { flex: 1; margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 16px; color: var(--primary); }
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%; padding: 15px; border: 2px solid #edf2f4; border-radius: 8px; box-sizing: border-box; font-size: 18px; transition: border-color 0.3s;
-        }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
-            outline: none; border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(217, 4, 41, 0.1);
-        }
+/* ─── HEADER ─── */
+.header {
+  width: 100%;
+  background: var(--primary);
+  border-bottom: 3px solid var(--red);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.35);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 14px 24px;
+}
+.logo-block { display: flex; flex-direction: column; line-height: 1.1; }
+.logo-main {
+  font-size: 1.75rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #fff;
+  letter-spacing: 1px;
+}
+.logo-sub {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+.header-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-        .btn-submit {
-            width: 100%; padding: 18px; background: var(--secondary); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px;
-        }
-        .btn-submit:hover { background: var(--secondary-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(217, 4, 41, 0.4); }
-        .btn-primary { background: var(--primary); }
-        .btn-primary:hover { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(10, 17, 40, 0.4); }
-        .btn-sheets { background: var(--sheets); box-shadow: 0 4px 10px rgba(15, 157, 88, 0.3); }
-        .btn-sheets:hover { background: #0b8043; }
-        
-        /* Tablas */
-        .results-container { margin-top: 25px; overflow-x: auto; border-radius: 8px; max-height: 500px; border: 1px solid #edf2f4; }
-        table { width: 100%; border-collapse: collapse; background: white; min-width: 700px; }
-        th, td { padding: 16px 15px; text-align: left; border-bottom: 1px solid #edf2f4; font-size: 16px; }
-        th { background-color: var(--primary); color: white; font-weight: 700; position: sticky; top: 0; z-index: 1; text-transform: uppercase; font-size: 15px; letter-spacing: 0.5px; }
-        tr:hover { background-color: #f8f9fa; }
-        .no-results { text-align: center; color: #8d99ae; font-style: italic; padding: 20px; font-weight: bold; font-size: 18px; }
+/* ─── OFFLINE ─── */
+#offline-bar {
+  display: none;
+  width: 100%;
+  background: #f59e0b;
+  color: #1a1a1a;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
 
-        /* Notificaciones */
-        #toast { visibility: hidden; min-width: 250px; background-color: var(--secondary); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 18px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        #toast.show { visibility: visible; animation: fadeinToast 0.5s, fadeoutToast 0.5s 2.5s; }
-        @keyframes fadeinToast { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
-        @keyframes fadeoutToast { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+/* ─── NAV TABS ─── */
+.nav {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  gap: 6px;
+  padding: 20px 16px 0;
+  flex-wrap: wrap;
+}
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.nav-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-btn:hover { background: #e8eaf0; color: var(--primary); border-color: var(--primary); }
+.nav-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-        #offline-indicator { display: none; background-color: #f77f00; color: white; text-align: center; padding: 10px; width: 100%; font-weight: bold; z-index: 2000; letter-spacing: 1px; font-size: 16px;}
+/* ─── CARD ─── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 32px;
+  width: 100%;
+  max-width: 900px;
+  margin: 16px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
 
-        /* OPTIMIZACIÓN MÓVIL */
-        @media screen and (max-width: 768px) {
-            .top-banner h1 { font-size: 2rem; }
-            .top-banner p { font-size: 0.9rem; letter-spacing: 2px; }
-            .container { padding: 20px; width: 95%; }
-            .form-row { flex-direction: column; gap: 0; }
-            .form-group { margin-bottom: 15px; }
-            .tabs { gap: 8px; }
-            .tabs button { flex: 1 1 45%; padding: 12px; font-size: 16px; }
-            h2 { font-size: 22px; }
-            .form-actions { flex-direction: column; }
-        }
-    </style>
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.card-title svg { width: 20px; height: 20px; color: var(--red); }
+
+/* ─── FORM ─── */
+.form-row { display: flex; gap: 14px; margin-bottom: 14px; }
+.form-group { flex: 1; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(217,4,41,0.1);
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+
+/* ─── PLACA FIELD WITH SCANNER ─── */
+.placa-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.placa-wrapper input { flex: 1; margin: 0; }
+.scan-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  letter-spacing: 0.3px;
+}
+.scan-btn:hover { background: var(--primary-light); }
+.scan-btn svg { width: 16px; height: 16px; }
+
+/* ─── SCANNER MODAL ─── */
+.scanner-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 1000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+}
+.scanner-overlay.open { display: flex; }
+.scanner-box {
+  background: var(--primary);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.scanner-title {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.scanner-close {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.scanner-close:hover { background: rgba(255,255,255,0.25); }
+
+#video-feed {
+  width: 100%;
+  border-radius: var(--radius);
+  background: #000;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  display: block;
+}
+#scan-canvas { display: none; }
+
+.scan-actions { display: flex; gap: 10px; }
+.btn-capture {
+  flex: 1;
+  padding: 12px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-capture:hover { background: var(--red-hover); }
+.btn-upload-img {
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-upload-img:hover { background: rgba(255,255,255,0.2); }
+#file-input-scanner { display: none; }
+
+.scan-result-area {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius);
+  padding: 14px;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scan-label { font-size: 0.72rem; color: rgba(255,255,255,0.5); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+.scan-detected {
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #fff;
+  letter-spacing: 3px;
+  font-family: 'Courier New', monospace;
+}
+.scan-status { font-size: 0.8rem; color: rgba(255,255,255,0.6); }
+.scan-progress {
+  height: 3px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  display: none;
+}
+.scan-progress-bar {
+  height: 100%;
+  background: var(--red);
+  width: 0%;
+  transition: width 0.3s;
+  animation: scanAnim 1.5s infinite;
+}
+@keyframes scanAnim { 0%{opacity:1} 50%{opacity:0.5} 100%{opacity:1} }
+.btn-confirm-plate {
+  width: 100%;
+  padding: 12px;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: none;
+}
+.btn-confirm-plate.visible { display: block; }
+.btn-confirm-plate:hover { background: var(--green-hover); }
+
+/* Captured preview */
+#capture-preview {
+  display: none;
+  width: 100%;
+  border-radius: var(--radius);
+  object-fit: contain;
+  max-height: 160px;
+  background: #000;
+}
+#capture-preview.visible { display: block; }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.btn-full { width: 100%; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-red:hover { background: var(--red-hover); transform: translateY(-1px); }
+.btn-dark { background: var(--primary); color: #fff; }
+.btn-dark:hover { background: var(--primary-light); transform: translateY(-1px); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: var(--green-hover); }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+}
+.btn-ghost:hover { background: var(--bg); color: var(--primary); }
+.btn svg { width: 16px; height: 16px; }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* ─── SEARCH ─── */
+.search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: flex-end;
+}
+.search-row .form-group { margin-bottom: 0; }
+#rangoFechas {
+  display: none;
+  gap: 10px;
+  align-items: center;
+}
+#rangoFechas input { margin: 0; }
+
+/* ─── TABLE ─── */
+.table-wrap {
+  margin-top: 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  overflow-x: auto;
+  max-height: 520px;
+  overflow-y: auto;
+}
+table { width: 100%; border-collapse: collapse; min-width: 680px; background: var(--surface); }
+th {
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 12px 14px;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+td {
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f7f8fc; }
+.placa-badge {
+  display: inline-block;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 0.92rem;
+  letter-spacing: 1.5px;
+  color: var(--red);
+}
+.placa-highlight {
+  background: var(--red);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.date-cell { font-weight: 700; white-space: nowrap; font-size: 0.82rem; }
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ─── ADMIN SECTIONS ─── */
+.admin-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.admin-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-section-title svg { width: 17px; height: 17px; }
+.admin-section p {
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.admin-section .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.color-green .admin-section-title { color: var(--green); }
+.color-green { border-left: 4px solid var(--green); border-radius: 0 var(--radius) var(--radius) 0; }
+.color-dark .admin-section-title { color: var(--primary); }
+.color-dark { border-left: 4px solid var(--primary); border-radius: 0 var(--radius) var(--radius) 0; }
+.color-red .admin-section-title { color: var(--red); }
+.color-red { border-left: 4px solid var(--red); border-radius: 0 var(--radius) var(--radius) 0; }
+
+#import-status {
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: var(--radius);
+  display: none;
+}
+#import-status.visible { display: block; }
+#import-status.ok { background: #dcfce7; color: #15803d; }
+#import-status.err { background: #fee2e2; color: #b91c1c; }
+#import-status.info { background: #eff6ff; color: #1d4ed8; }
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--primary);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 50px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 2000;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* ─── HISTORIAL BADGE ─── */
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  border-radius: var(--radius) var(--radius) 0 0;
+  margin-bottom: -1px;
+}
+.history-header span {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.history-header .count-badge {
+  background: var(--red);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: auto;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 640px) {
+  .card { padding: 20px 16px; margin: 12px 8px; }
+  .form-row { flex-direction: column; gap: 0; }
+  .nav { padding: 14px 8px 0; gap: 5px; }
+  .nav-btn { padding: 9px 13px; font-size: 0.8rem; }
+  .header-inner { padding: 12px 16px; }
+  .logo-main { font-size: 1.4rem; }
+  .form-actions { flex-direction: column; }
+  .search-row { flex-direction: column; }
+  .scan-actions { flex-direction: column; }
+}
+</style>
 </head>
 <body>
 
-    <div id="offline-indicator">⚠️ MODO SIN CONEXIÓN: Datos guardados localmente. Se sincronizarán al recuperar el internet.</div>
+<div id="offline-bar">⚠ Sin conexión — datos guardados localmente, se sincronizarán al reconectarte.</div>
 
-    <header class="top-banner">
-        <h1>HENRY CAR'S</h1>
-        <p>MECÁNICA AUTOMOTRIZ</p>
-    </header>
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-block">
+      <span class="logo-main">HENRY CAR'S</span>
+      <span class="logo-sub">Mecánica Automotriz</span>
+    </div>
+    <div class="header-badge">
+      <div class="status-dot" id="conn-dot"></div>
+      <span id="conn-label">En línea</span>
+    </div>
+  </div>
+</header>
 
-    <div class="tabs">
-        <button id="btn-ingreso" class="active" onclick="switchTab('ingreso')">🏎️ Nuevo Ingreso</button>
-        <button id="btn-buscar" onclick="switchTab('buscar')">🔍 Buscar</button>
-        <button id="btn-bd" onclick="switchTab('bd')">📋 Base de Datos</button>
-        <button id="btn-admin" onclick="switchTab('admin')">⚙️ Administrador</button>
+<nav class="nav">
+  <button class="nav-btn active" id="btn-ingreso" onclick="switchTab('ingreso')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m-8-8h16"/></svg>
+    Nuevo Ingreso
+  </button>
+  <button class="nav-btn" id="btn-buscar" onclick="switchTab('buscar')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    Buscar
+  </button>
+  <button class="nav-btn" id="btn-bd" onclick="switchTab('bd')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    Base de Datos
+  </button>
+  <button class="nav-btn" id="btn-admin" onclick="switchTab('admin')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    Administrador
+  </button>
+</nav>
+
+<div class="card">
+
+  <!-- ═══ TAB: INGRESO ═══ -->
+  <div id="tab-ingreso" class="tab-content active">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2z"/></svg>
+      Registrar Vehículo
+    </div>
+    <form id="tallerForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="fecha" required>
+        </div>
+        <div class="form-group">
+          <label>Placa *</label>
+          <div class="placa-wrapper">
+            <input type="text" id="placa" required placeholder="Ej: ABC123" style="text-transform:uppercase">
+            <button type="button" class="scan-btn" onclick="abrirScanner()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M8 12h8M12 8v8"/></svg>
+              Escanear
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre del cliente</label>
+          <input type="text" id="nombre" placeholder="Opcional">
+        </div>
+        <div class="form-group">
+          <label>Cédula</label>
+          <input type="text" id="cedula" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Marca *</label>
+          <input type="text" id="marca" required placeholder="Ej: Chevrolet" list="lista-marcas">
+          <datalist id="lista-marcas">
+            <option value="Chevrolet"><option value="Renault"><option value="Mazda">
+            <option value="Toyota"><option value="Kia"><option value="Nissan">
+            <option value="Hyundai"><option value="Ford"><option value="Volkswagen">
+            <option value="Suzuki"><option value="BMW"><option value="Mercedes-Benz">
+            <option value="Audi"><option value="Jeep"><option value="Mitsubishi">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label>Línea *</label>
+          <input type="text" id="linea" required placeholder="Ej: Spark">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Kilometraje *</label>
+        <input type="number" id="kilometraje" required placeholder="Ej: 50000" min="0">
+      </div>
+      <div class="form-group">
+        <label>Descripción del servicio *</label>
+        <textarea id="descripcion" rows="3" required placeholder="Detalla el problema o servicio realizado..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" id="btn-cancelar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-red" style="flex:1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Guardar Registro
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ═══ TAB: BUSCAR ═══ -->
+  <div id="tab-buscar" class="tab-content">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Buscador de Vehículos
+    </div>
+    <div class="search-row">
+      <div class="form-group" style="max-width:180px">
+        <label>Buscar por</label>
+        <select id="searchField">
+          <option value="placa">Placa</option>
+          <option value="cedula">Cédula</option>
+          <option value="fecha">Fecha (rango)</option>
+          <option value="nombre">Nombre</option>
+          <option value="marca">Marca</option>
+          <option value="linea">Línea</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label>Término</label>
+        <input type="text" id="searchValue" placeholder="Escribe para buscar...">
+        <div id="rangoFechas">
+          <input type="date" id="fechaInicio" style="flex:1">
+          <span style="color:var(--text-muted);font-size:.8rem">a</span>
+          <input type="date" id="fechaFin" style="flex:1">
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-dark btn-full" id="btn-ejecutar-busqueda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Buscar en el sistema
+    </button>
+    <div id="searchResults"></div>
+  </div>
+
+  <!-- ═══ TAB: BD ═══ -->
+  <div id="tab-bd" class="tab-content">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Historial Completo
+    </div>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px">Registros ordenados del más reciente al más antiguo.</p>
+    <button class="btn btn-dark btn-full" id="btn-recargar-bd">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Actualizar lista
+    </button>
+    <div id="bdResults"><p class="no-data">Haz clic en "Actualizar lista" para ver los registros.</p></div>
+  </div>
+
+  <!-- ═══ TAB: ADMIN ═══ -->
+  <div id="tab-admin" class="tab-content">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Panel de Administrador
     </div>
 
-    <div class="container">
-        
-        <div id="tab-ingreso" class="tab-content active">
-            <h2>Registrar Vehículo</h2>
-            <form id="tallerForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>FECHA *</label>
-                        <input type="date" id="fecha" required>
-                    </div>
-                    <div class="form-group">
-                        <label>PLACA *</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="placa" required placeholder="Ej: ABC123" style="text-transform: uppercase; flex: 1;">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>NOMBRE DEL CLIENTE</label>
-                        <input type="text" id="nombre" placeholder="Opcional">
-                    </div>
-                    <div class="form-group">
-                        <label>CÉDULA</label>
-                        <input type="text" id="cedula" placeholder="Opcional">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>MARCA *</label>
-                        <input type="text" id="marca" required placeholder="Ej: Chevrolet" list="lista-marcas">
-                        <datalist id="lista-marcas">
-                            <option value="Chevrolet"></option>
-                            <option value="Renault"></option>
-                            <option value="Mazda"></option>
-                            <option value="Toyota"></option>
-                            <option value="Kia"></option>
-                            <option value="Nissan"></option>
-                            <option value="Hyundai"></option>
-                            <option value="Ford"></option>
-                            <option value="Volkswagen"></option>
-                            <option value="Suzuki"></option>
-                            <option value="BMW"></option>
-                            <option value="Mercedes-Benz"></option>
-                            <option value="Audi"></option>
-                        </datalist>
-                    </div>
-                    <div class="form-group">
-                        <label>LÍNEA *</label>
-                        <input type="text" id="linea" required placeholder="Ej: Spark">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>KILOMETRAJE *</label>
-                    <input type="number" id="kilometraje" required placeholder="Ej: 50000">
-                </div>
-                <div class="form-group">
-                    <label>DESCRIPCIÓN DEL SERVICIO *</label>
-                    <textarea id="descripcion" rows="3" required placeholder="Detalla el problema o servicio realizado..."></textarea>
-                </div>
-                
-                <div class="form-actions" style="display: flex; gap: 15px; margin-top: 10px;">
-                    <button type="button" id="btn-cancelar" class="btn-submit" style="background-color: #6c757d; margin-top: 0; flex: 0.4;">❌ Cancelar</button>
-                    <button type="submit" class="btn-submit" style="margin-top: 0; flex: 0.6;">💾 Guardar Registro</button>
-                </div>
-            </form>
-        </div>
-
-        <div id="tab-buscar" class="tab-content">
-            <h2>Buscador de Vehículos</h2>
-            <div class="form-row">
-                <div class="form-group" style="flex: 0.4;">
-                    <label>BUSCAR POR:</label>
-                    <select id="searchField">
-                        <option value="placa">Placa</option>
-                        <option value="cedula">Cédula</option>
-                        <option value="fecha">Fecha</option>
-                        <option value="nombre">Nombre</option>
-                        <option value="marca">Marca</option>
-                        <option value="linea">Línea</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex: 0.6;">
-                    <label>TÉRMINO DE BÚSQUEDA:</label>
-                    <input type="text" id="searchValue" placeholder="Escribe aquí para buscar...">
-                    <div id="rangoFechas" style="display:none; gap:10px;">
-                        <input type="date" id="fechaInicio">
-                        <input type="date" id="fechaFin">
-                    </div>
-                </div>
-            </div>
-            <button class="btn-submit btn-primary" id="btn-ejecutar-busqueda">🔍 Buscar en Sistema</button>
-            <div id="searchResults" class="results-container"></div>
-        </div>
-
-        <div id="tab-bd" class="tab-content">
-            <h2>Historial Completo</h2>
-            <p style="text-align: center; margin-bottom: 20px; font-size: 16px;">Visualiza el historial completo (Ordenado del más reciente al más antiguo).</p>
-            <button class="btn-submit btn-primary" id="btn-recargar-bd">🔄 Actualizar Lista</button>
-            <div id="bdResults" class="results-container">
-                <p class="no-results">Haz clic en "Actualizar Lista" para ver los vehículos.</p>
-            </div>
-        </div>
-
-        <div id="tab-admin" class="tab-content">
-            <h2>Panel de Administrador</h2>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid var(--sheets);">
-                <h3 style="margin-top:0; color:var(--sheets)">🟢 Sincronizar Google Sheets</h3>
-                <p style="font-size: 16px; color: #475569;">Trae los datos desde tu hoja de cálculo en línea para actualizar la base de datos local y Firebase.</p>
-                <button class="btn-submit btn-sheets" id="btn-importar-sheets">📥 Descargar datos</button>
-                <button class="btn-submit btn-sheets" onclick="sincronizarDatos()">🔄 Sincronizar datos</button>
-            </div>
-
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid var(--primary);">
-                <h3 style="margin-top:0; color:var(--primary)">📁 Importar Excel Local</h3>
-                <p style="font-size: 16px; color: #475569;">Sube tu archivo .xlsx o .xlsm para importar registros masivos.</p>
-                <div class="form-group">
-                    <input type="file" id="excelFile" accept=".xlsx, .xls, .xlsm" style="background: white; border: 1px solid #ccc; width: 100%; box-sizing: border-box; padding: 10px;">
-                </div>
-                <button class="btn-submit btn-primary" id="btn-importar">📤 Importar Archivo</button>
-            </div>
-
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid var(--secondary);">
-                <h3 style="margin-top:0; color:var(--secondary)">📊 Exportar Base de Datos</h3>
-                <p style="font-size: 16px; color: #475569;">Descarga toda la base de datos en formato Excel (.xlsx), organizada y sin duplicados.</p>
-                <button class="btn-submit" id="btn-exportar" style="background: var(--secondary);">📥 Exportar a Excel</button>
-            </div>
-            
-            <p id="import-status" style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 16px;"></p>
-        </div>
-        
+    <div class="admin-section color-green">
+      <div class="admin-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Sincronizar con Google Sheets
+      </div>
+      <p>Descarga los datos desde la hoja de cálculo en línea o sincroniza ambas bases de datos en tiempo real.</p>
+      <div class="btn-row">
+        <button class="btn btn-green" id="btn-importar-sheets">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+          Descargar datos
+        </button>
+        <button class="btn btn-green" onclick="sincronizarDatos()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Sincronizar
+        </button>
+      </div>
     </div>
 
-    <div id="toast">¡Acción realizada con éxito!</div>
+    <div class="admin-section color-dark">
+      <div class="admin-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Importar Excel local
+      </div>
+      <p>Sube tu archivo .xlsx o .xlsm para importar registros de forma masiva.</p>
+      <input type="file" id="excelFile" accept=".xlsx,.xls,.xlsm" style="display:block;width:100%;padding:9px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:.85rem;margin-bottom:12px;background:var(--surface)">
+      <button class="btn btn-dark" id="btn-importar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        Importar archivo
+      </button>
+    </div>
 
-    <script>
-        // Registrar el Service Worker (PWA)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                .then(reg => console.log('PWA registrada', reg))
-                .catch(err => console.error('PWA error', err));
-            });
+    <div class="admin-section color-red">
+      <div class="admin-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar base de datos
+      </div>
+      <p>Descarga toda la base de datos en Excel (.xlsx), ordenada y sin duplicados.</p>
+      <button class="btn btn-red" id="btn-exportar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar a Excel
+      </button>
+    </div>
+
+    <div id="import-status"></div>
+  </div>
+
+</div>
+
+<!-- ═══ SCANNER MODAL ═══ -->
+<div class="scanner-overlay" id="scannerOverlay">
+  <div class="scanner-box">
+    <div class="scanner-title">
+      <span>Escanear Placa Colombiana</span>
+      <button class="scanner-close" onclick="cerrarScanner()">✕</button>
+    </div>
+
+    <video id="video-feed" autoplay playsinline muted></video>
+    <canvas id="scan-canvas"></canvas>
+    <img id="capture-preview" alt="Captura">
+
+    <div class="scan-actions">
+      <button class="btn-capture" id="btn-capture" onclick="capturarFoto()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><circle cx="12" cy="12" r="3"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/><path d="M3.67 3.67 20.33 20.33"/><path d="M5 5.5v.5a7 7 0 0 0 7 7h0a7 7 0 0 0 7-7v-.5"/><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+        Capturar foto
+      </button>
+      <label class="btn-upload-img">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Subir imagen
+        <input type="file" id="file-input-scanner" accept="image/*">
+      </label>
+    </div>
+
+    <div class="scan-result-area">
+      <span class="scan-label">Placa detectada</span>
+      <div class="scan-detected" id="scan-detected-text">—</div>
+      <div class="scan-status" id="scan-status-text">Captura la placa o sube una imagen</div>
+      <div class="scan-progress" id="scan-progress">
+        <div class="scan-progress-bar" id="scan-progress-bar"></div>
+      </div>
+    </div>
+
+    <button class="btn-confirm-plate" id="btn-confirm-plate" onclick="confirmarPlaca()">
+      ✓ Usar esta placa
+    </button>
+  </div>
+</div>
+
+<div id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+  <span id="toast-text">Acción realizada</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<script>
+// ── UTILS ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('btn-' + tab).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+window.showToast = showToast;
+
+// Connectivity
+function updateConn() {
+  const online = navigator.onLine;
+  document.getElementById('conn-dot').style.background = online ? '#22c55e' : '#f59e0b';
+  document.getElementById('conn-label').textContent = online ? 'En línea' : 'Sin conexión';
+  document.getElementById('offline-bar').style.display = online ? 'none' : 'block';
+}
+window.addEventListener('online', () => { updateConn(); showToast('¡Conectado! Sincronizando…'); });
+window.addEventListener('offline', updateConn);
+updateConn();
+
+// Search field switch
+document.getElementById('searchField').addEventListener('change', function() {
+  const isFecha = this.value === 'fecha';
+  document.getElementById('searchValue').style.display = isFecha ? 'none' : 'block';
+  document.getElementById('rangoFechas').style.display = isFecha ? 'flex' : 'none';
+  if (!isFecha) document.getElementById('searchValue').value = '';
+});
+
+// Cancel form
+document.getElementById('btn-cancelar').addEventListener('click', () => {
+  if (confirm('¿Borrar los datos ingresados?')) {
+    document.getElementById('tallerForm').reset();
+    showToast('Campos limpiados');
+  }
+});
+
+// Set today's date
+document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+</script>
+
+<!-- ── SCANNER ── -->
+<script>
+let scannerStream = null;
+let detectedPlate = '';
+let worker = null;
+
+async function iniciarCamara() {
+  try {
+    const constraints = { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } };
+    scannerStream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('video-feed');
+    video.srcObject = scannerStream;
+    video.style.display = 'block';
+    document.getElementById('capture-preview').classList.remove('visible');
+    document.getElementById('btn-capture').style.display = 'flex';
+    document.getElementById('scan-status-text').textContent = 'Apunta hacia la placa del vehículo';
+  } catch(e) {
+    console.warn('Cámara no disponible:', e);
+    document.getElementById('video-feed').style.display = 'none';
+    document.getElementById('btn-capture').style.display = 'none';
+    document.getElementById('scan-status-text').textContent = 'Cámara no disponible — usa "Subir imagen"';
+  }
+}
+
+function abrirScanner() {
+  document.getElementById('scannerOverlay').classList.add('open');
+  document.getElementById('scan-detected-text').textContent = '—';
+  document.getElementById('scan-status-text').textContent = 'Captura la placa o sube una imagen';
+  document.getElementById('scan-progress').style.display = 'none';
+  document.getElementById('btn-confirm-plate').classList.remove('visible');
+  detectedPlate = '';
+  iniciarCamara();
+}
+
+function cerrarScanner() {
+  document.getElementById('scannerOverlay').classList.remove('open');
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(t => t.stop());
+    scannerStream = null;
+  }
+  if (worker) { worker.terminate(); worker = null; }
+}
+
+function capturarFoto() {
+  const video = document.getElementById('video-feed');
+  const canvas = document.getElementById('scan-canvas');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 360;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  const preview = document.getElementById('capture-preview');
+  preview.src = canvas.toDataURL('image/jpeg', 0.92);
+  preview.classList.add('visible');
+
+  procesarImagen(canvas);
+}
+
+document.getElementById('file-input-scanner').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.getElementById('scan-canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      const preview = document.getElementById('capture-preview');
+      preview.src = ev.target.result;
+      preview.classList.add('visible');
+      document.getElementById('video-feed').style.display = 'none';
+      procesarImagen(canvas);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+async function procesarImagen(canvas) {
+  const progress = document.getElementById('scan-progress');
+  const progressBar = document.getElementById('scan-progress-bar');
+  const statusEl = document.getElementById('scan-status-text');
+  const detectedEl = document.getElementById('scan-detected-text');
+
+  progress.style.display = 'block';
+  progressBar.style.width = '10%';
+  statusEl.textContent = 'Preprocesando imagen…';
+  detectedEl.textContent = '—';
+  document.getElementById('btn-confirm-plate').classList.remove('visible');
+
+  const preprocessed = preprocessCanvas(canvas);
+  progressBar.style.width = '30%';
+  statusEl.textContent = 'Reconociendo texto con OCR…';
+
+  try {
+    if (worker) { await worker.terminate(); worker = null; }
+    worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          progressBar.style.width = (30 + m.progress * 60) + '%';
         }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById('tab-' + tab).classList.add('active');
-            document.getElementById('btn-' + tab).classList.add('active');
-        }
-
-        function showToast(mensaje) {
-            const toast = document.getElementById("toast");
-            toast.innerText = mensaje;
-            toast.className = "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
-        }
-        window.showToast = showToast; 
-
-        window.addEventListener('offline', () => {
-            document.getElementById('offline-indicator').style.display = 'block';
-        });
-        window.addEventListener('online', () => {
-            document.getElementById('offline-indicator').style.display = 'none';
-            showToast("¡Conectado! Sincronizando en segundo plano...");
-        });
-
-        document.getElementById('searchField').addEventListener('change', function(e) {
-            const searchInput = document.getElementById('searchValue');
-            const rangoFechas = document.getElementById('rangoFechas');
-            
-            if(e.target.value === 'fecha') {
-                searchInput.style.display = 'none';
-                rangoFechas.style.display = 'flex';
-                document.getElementById('fechaInicio').value = '';
-                document.getElementById('fechaFin').value = '';
-            } else {
-                searchInput.style.display = 'block';
-                rangoFechas.style.display = 'none';
-                searchInput.type = 'text';
-                searchInput.value = '';
-                searchInput.placeholder = 'Escribe aquí para buscar...';
-            }
-        });
-
-        // --- LÓGICA DEL BOTÓN CANCELAR ---
-        document.getElementById('btn-cancelar').addEventListener('click', () => {
-            const confirmacion = confirm("¿Estás seguro de que deseas cancelar este registro y borrar los datos ingresados?");
-            if (confirmacion) {
-                document.getElementById('tallerForm').reset();
-                showToast("Los campos han sido borrados.");
-            }
-        });
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs, getDocsFromServer, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyA5vO1ivxbdtGmTG8R0ZFTi-OBL1yYJzXQ",
-            authDomain: "henrycar-s.firebaseapp.com",
-            projectId: "henrycar-s",
-            storageBucket: "henrycar-s.firebasestorage.app",
-            messagingSenderId: "815993010042",
-            appId: "1:815993010042:web:24a3c529bec4ab5274c8c3",
-            measurementId: "G-S27LW3MXQ5"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const db = getFirestore(app);
-
-        // MODO OFFLINE (NO MODIFICADO SEGÚN SOLICITUD)
-        enableIndexedDbPersistence(db).catch((err) => {
-            if (err.code == 'failed-precondition') {
-                console.log("Varias pestañas abiertas, modo offline solo en una.");
-            } else if (err.code == 'unimplemented') {
-                console.log("El navegador no soporta el modo offline.");
-            }
-        });
-
-        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCoXzEMJ80J8Z1GfbYuXQCiXSBm-Wy78IyKGZlbweBT2kqIPBT84oHQXAzBvih2X3LKQ/exec";
-
-        // ---- NUEVA FUNCIÓN CENTRALIZADA PARA LEER DATOS (SHEETS -> FIREBASE) ----
-        async function obtenerTodosLosRegistrosCentralizado() {
-            let registros = [];
-            let leidoSheets = false;
-            
-            if (navigator.onLine) {
-                try {
-                    const response = await fetch(GOOGLE_SHEETS_URL);
-                    if (!response.ok) throw new Error("HTTP Status " + response.status);
-                    const dataSheets = await response.json();
-                    
-                    registros = dataSheets.map(fila => {
-                        let f_raw = fila.Fecha || fila.FECHA || fila.fecha;
-                        let f = f_raw;
-                        if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0]; // Normalizar a YYYY-MM-DD
-
-                        return {
-                            fecha: f,
-                            placa: String(fila.Placa || fila.PLACA || fila.placa).replace(/\s+/g, '').toUpperCase(),
-                            nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || fila.nombre || '',
-                            cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || fila.cedula || '',
-                            marca: fila.Marca || fila.MARCA || fila.marca || '',
-                            linea: fila.Linea || fila.LINEA || fila.linea || '',
-                            kilometraje: fila.Kilometraje || fila.KILOMETRAJE || fila.kilometraje || '',
-                            descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || fila.descripcion || ''
-                        };
-                    });
-                    leidoSheets = true;
-                } catch (error) {
-                    console.warn("Fallo lectura desde Google Sheets. Consultando respaldo en Firebase...", error);
-                }
-            }
-
-            // Si Sheets falló o no hay internet, usar Firebase como respaldo
-            if (!leidoSheets) {
-                let snapshot;
-                if (navigator.onLine) {
-                    snapshot = await getDocsFromServer(collection(db, "registros_taller"));
-                } else {
-                    snapshot = await getDocs(collection(db, "registros_taller"));
-                }
-                snapshot.forEach(doc => registros.push(doc.data()));
-            }
-            
-            return registros;
-        }
-
-        // --- FUNCIÓN DE SINCRONIZACIÓN AUTOMÁTICA (REQUERIMIENTO MANUAL) ---
-        window.sincronizarDatos = async function() {
-            if (!navigator.onLine) {
-                console.warn("Se requiere conexión para sincronizar.");
-                return;
-            }
-            console.log("Iniciando sincronización manual entre Sheets y Firebase...");
-            try {
-                // 1. Leer Sheets Original
-                const sheetsRes = await fetch(GOOGLE_SHEETS_URL);
-                const sheetsRaw = await sheetsRes.json();
-                
-                // 2. Leer Firebase Original
-                const fbSnapshot = await getDocsFromServer(collection(db, "registros_taller"));
-                let fbData = [];
-                fbSnapshot.forEach(doc => fbData.push({ id: doc.id, ...doc.data() }));
-
-                let mapaUnificado = new Map();
-                
-                // Unificar datos usando Placa-Fecha (Firebase primero)
-                fbData.forEach(item => {
-                    let f = item.fecha || item.FECHA;
-                    let p = String(item.placa || item.PLACA).replace(/\s+/g, '').toUpperCase();
-                    mapaUnificado.set(`${p}-${f}`, item);
-                });
-
-                // Unificar datos Sheets y guardar faltantes en Firebase
-                sheetsRaw.forEach(fila => {
-                    let f_raw = fila.Fecha || fila.FECHA || fila.fecha;
-                    let f = f_raw;
-                    if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0];
-                    let p = String(fila.Placa || fila.PLACA || fila.placa).replace(/\s+/g, '').toUpperCase();
-                    
-                    if (p && f) {
-                        let clave = `${p}-${f}`;
-                        if (!mapaUnificado.has(clave)) {
-                            let dataEstandar = {
-                                fecha: f,
-                                placa: p,
-                                nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || fila.nombre || '',
-                                cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || fila.cedula || '',
-                                marca: fila.Marca || fila.MARCA || fila.marca || '',
-                                linea: fila.Linea || fila.LINEA || fila.linea || '',
-                                kilometraje: fila.Kilometraje || fila.KILOMETRAJE || fila.kilometraje || '',
-                                descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || fila.descripcion || '',
-                                timestamp: new Date()
-                            };
-                            mapaUnificado.set(clave, dataEstandar);
-                            // Respaldo en Firebase de doc que solo estaba en Sheets
-                            addDoc(collection(db, "registros_taller"), dataEstandar);
-                        }
-                    }
-                });
-
-                // Guardar faltantes en Sheets
-                for (let [clave, data] of mapaUnificado.entries()) {
-                    let enSheets = sheetsRaw.some(fila => {
-                         let f_raw = fila.Fecha || fila.FECHA || fila.fecha;
-                         let f = f_raw;
-                         if (String(f_raw).includes("T")) f = String(f_raw).split("T")[0];
-                         let p = String(fila.Placa || fila.PLACA || fila.placa).replace(/\s+/g, '').toUpperCase();
-                         return `${p}-${f}` === clave;
-                    });
-
-                    if (!enSheets) {
-                        // Enviamos a Sheets lo que solo estaba en Firebase
-                        fetch(GOOGLE_SHEETS_URL, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(data)
-                        }).catch(e => console.log(e));
-                    }
-                }
-                console.log("Sincronización finalizada. Registros unificados:", mapaUnificado.size);
-            } catch (error) {
-                console.error("Error en sincronización:", error);
-            }
-        };
-
-        window.autocompletarDatosVehiculo = async function(placaVal) {
-            const placaLimpia = placaVal.replace(/\s+/g, '').toUpperCase();
-            if (!placaLimpia || placaLimpia.length < 5) return;
-            try {
-                // Utilizamos el método unificado central (Intenta Sheets -> luego Firebase)
-                let todosLosRegistros = await obtenerTodosLosRegistrosCentralizado();
-                let registrosVehiculo = todosLosRegistros.filter(r => 
-                    String(r.placa || r.PLACA || r.Placa || '').replace(/\s+/g, '').toUpperCase() === placaLimpia
-                );
-                
-                if (registrosVehiculo.length > 0) {
-                    let registros = ordenarPorFecha(registrosVehiculo);
-                    const latest = registros[0];
-                    
-                    const updateFieldIfEmpty = (id, valor) => {
-                        const el = document.getElementById(id);
-                        if (!el.value && valor) el.value = valor;
-                    };
-
-                    updateFieldIfEmpty('nombre', latest.nombre || latest['NOMBRE Y APELLIDOS'] || latest.NOMBRE || '');
-                    updateFieldIfEmpty('cedula', latest.cedula || latest['No. IDENTIFICACIÓN'] || latest.CEDULA || '');
-                    updateFieldIfEmpty('marca', latest.marca || latest.MARCA || latest.Marca || '');
-                    updateFieldIfEmpty('linea', latest.linea || latest.LINEA || latest.Linea || '');
-                    
-                    window.showToast("🚗 Se cargaron datos previos de este vehículo.");
-                }
-            } catch (error) {
-                console.error("Error al autocompletar:", error);
-            }
-        };
-
-        document.getElementById('placa').addEventListener('blur', (e) => {
-            e.target.value = e.target.value.replace(/\s+/g, '').toUpperCase();
-            window.autocompletarDatosVehiculo(e.target.value);
-        });
-
-        document.getElementById('tallerForm').addEventListener('submit', async (e) => {
-            e.preventDefault(); 
-            const placa = document.getElementById('placa').value.replace(/\s+/g, '').toUpperCase();
-            
-            // Normalizar a formato YYYY-MM-DD (Directo del input type date)
-            const inputFecha = document.getElementById('fecha').value; 
-            const fechaNormalizada = inputFecha; 
-            
-            const data = {
-                fecha: fechaNormalizada,
-                placa: placa,
-                nombre: document.getElementById('nombre').value,
-                cedula: document.getElementById('cedula').value,
-                marca: document.getElementById('marca').value,
-                linea: document.getElementById('linea').value,
-                kilometraje: document.getElementById('kilometraje').value,
-                descripcion: document.getElementById('descripcion').value,
-                timestamp: new Date()
-            };
-
-            try {
-                let existeDuplicado = false;
-                
-                // Comprobar Firebase para duplicado
-                const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fechaNormalizada));
-                const querySnapshot = await getDocs(q);
-
-                if (!querySnapshot.empty) {
-                    existeDuplicado = true;
-                    alert("⚠️ Ya existe un registro para la placa " + placa + " en la fecha " + fechaNormalizada);
-                    return; 
-                }
-
-                // 1. Guardar primero en Google Sheets
-                if(navigator.onLine) {
-                    try {
-                        await fetch(GOOGLE_SHEETS_URL, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(data)
-                        });
-                    } catch(err) {
-                        console.log("Error al intentar POST a Sheets.", err);
-                    }
-                }
-
-                // 2. Guardar luego en Firebase SOLO si no existe (ya validado con querySnapshot.empty)
-                if (querySnapshot.empty) {
-                    await addDoc(collection(db, "registros_taller"), data);
-                }
-
-                window.showToast("✅ ¡Vehículo guardado correctamente!");
-                document.getElementById('tallerForm').reset(); 
-            } catch (error) {
-                console.error("Error al guardar: ", error);
-                alert("Hubo un error al intentar guardar.");
-            }
-        });
-
-        function ordenarPorFecha(array) {
-            return array.sort((a, b) => {
-                let fechaA = new Date(a.fecha || a.FECHA || 0);
-                let fechaB = new Date(b.fecha || b.FECHA || 0);
-                return fechaB - fechaA;
-            });
-        }
-
-        function eliminarDuplicados(arrayResultados) {
-            let mapaUnicos = new Map();
-            arrayResultados.forEach(res => {
-                let p = String(res.placa || res.PLACA || res.Placa || 'SIN_PLACA').replace(/\s+/g, '').toUpperCase();
-                let f = res.fecha || res.FECHA || res.Fecha || 'SIN_FECHA';
-                
-                if (typeof f === 'number' && !isNaN(f)) {
-                    let d = new Date(Math.round((f - 25569) * 86400 * 1000));
-                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                    f = d.toISOString().split('T')[0];
-                }
-                
-                mapaUnicos.set(`${p}-${f}`, res);
-            });
-            return Array.from(mapaUnicos.values());
-        }
-
-        function renderTabla(datosArray, contenedorHTML, placaResaltada = null) {
-            let tablaHTML = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Placa</th>
-                            <th>Cliente</th>
-                            <th>Marca / Línea</th>
-                            <th>Km</th>
-                            <th>Descripción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            datosArray.forEach(res => {
-                let f_fecha = res.fecha || res.FECHA || res.Fecha || '-';
-                
-                if (typeof f_fecha === 'number' && !isNaN(f_fecha)) {
-                    let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
-                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                    f_fecha = d.toISOString().split('T')[0];
-                }
-
-                let f_placa = String(res.placa || res.PLACA || res.Placa || '-').replace(/\s+/g, '').toUpperCase();
-                let f_cliente = res.nombre || res['NOMBRE Y APELLIDOS'] || res.NOMBRE || res.cedula || res['No. IDENTIFICACIÓN'] || 'No registrado';
-                let f_marca = res.marca || res.MARCA || res.Marca || '-';
-                let f_linea = res.linea || res.LINEA || res.Linea || '';
-                let f_km = res.kilometraje || res.KILOMETRAJE || res.Kilometraje || '-';
-                let f_desc = res.descripcion || res['DESCRIPCIÓN DEL SERVICIO'] || res['DESCRIPCION DEL SERVICIO'] || res.DESCRIPCION || '-';
-
-                let estiloPlaca = (placaResaltada && f_placa === placaResaltada) 
-                    ? "background-color: var(--secondary); color: white; padding: 4px 8px; border-radius: 4px;" 
-                    : "color: var(--secondary);";
-
-                tablaHTML += `
-                    <tr>
-                        <td style="white-space: nowrap; font-weight: bold;">${f_fecha}</td>
-                        <td style="font-weight: bold; font-size: 18px;"><span style="${estiloPlaca}">${f_placa}</span></td>
-                        <td>${f_cliente}</td>
-                        <td>${f_marca} ${f_linea}</td>
-                        <td>${f_km}</td>
-                        <td style="font-size: 15px; color: #555;">${f_desc}</td>
-                    </tr>
-                `;
-            });
-
-            tablaHTML += `</tbody></table>`;
-            contenedorHTML.innerHTML = tablaHTML;
-        }
-
-        document.getElementById('btn-ejecutar-busqueda').addEventListener('click', async () => {
-            const field = document.getElementById('searchField').value;
-            const resultsDiv = document.getElementById('searchResults');
-            let searchValueRaw = "";
-
-            if (field !== 'fecha') {
-                searchValueRaw = document.getElementById('searchValue').value.trim().toLowerCase();
-                if (!searchValueRaw) { alert("Ingresa un valor para buscar."); return; }
-            }
-
-            resultsDiv.innerHTML = '<p class="no-results">⏳ Buscando en el sistema...</p>';
-
-            try {
-                let dataCompleta = await obtenerTodosLosRegistrosCentralizado();
-                let resultados = [];
-                let searchTerms = [];
-
-                if (field === 'fecha') {
-                    const inicio = document.getElementById('fechaInicio').value;
-                    const fin = document.getElementById('fechaFin').value;
-
-                    if (!inicio || !fin) {
-                        alert("Selecciona ambas fechas");
-                        resultsDiv.innerHTML = '';
-                        return;
-                    }
-
-                    if (inicio > fin) {
-                        alert("La fecha inicial no puede ser mayor que la final");
-                        resultsDiv.innerHTML = '';
-                        return;
-                    }
-
-                    resultados = dataCompleta.filter(data => {
-                        let f = data.fecha || data.FECHA;
-                        return f >= inicio && f <= fin;
-                    });
-                } else {
-                    if (field === 'placa') {
-                        searchTerms = [searchValueRaw.replace(/\s+/g, '')];
-                    } else {
-                        searchTerms = searchValueRaw.split(' ').filter(term => term !== '');
-                    }
-
-                    dataCompleta.forEach((data) => {
-                        let valorGuardado = data[field] || data[field.toUpperCase()] || data[field.charAt(0).toUpperCase() + field.slice(1)];
-                        
-                        if (valorGuardado) {
-                            let valorStr = String(valorGuardado).toLowerCase();
-                            if (field === 'placa') valorStr = valorStr.replace(/\s+/g, '');
-                            
-                            const coincideTodo = searchTerms.every(term => valorStr.includes(term));
-                            
-                            if (coincideTodo) {
-                                resultados.push(data);
-                            }
-                        }
-                    });
-                }
-
-                if (resultados.length === 0) {
-                    resultsDiv.innerHTML = '<p class="no-results">❌ No se encontraron resultados.</p>';
-                } else {
-                    resultados = eliminarDuplicados(resultados);
-                    resultados = ordenarPorFecha(resultados);
-                    
-                    if (field === 'placa' && field !== 'fecha') {
-                        let placaDetectada = resultados[0].placa || resultados[0].PLACA || searchTerms[0].toUpperCase();
-                        placaDetectada = placaDetectada.replace(/\s+/g, '');
-                        
-                        const tituloHistorial = `
-                            <h3 style="color: var(--primary); text-align: center; border-bottom: 3px solid var(--secondary); padding-bottom: 10px; margin-top: 15px;">
-                                🚘 Historial del vehículo: <span style="color: var(--secondary)">${placaDetectada}</span>
-                            </h3>`;
-                        resultsDiv.innerHTML = tituloHistorial;
-                        
-                        const containerTemp = document.createElement('div');
-                        renderTabla(resultados, containerTemp, placaDetectada);
-                        resultsDiv.appendChild(containerTemp);
-                    } else {
-                        renderTabla(resultados, resultsDiv);
-                    }
-                }
-            } catch (error) {
-                console.error("Error: ", error);
-                resultsDiv.innerHTML = '<p class="no-results">⚠️ Error al buscar.</p>';
-            }
-        });
-
-        // --- SOLUCIÓN APLICADA AL BOTÓN DE ACTUALIZAR ---
-        document.getElementById('btn-recargar-bd').addEventListener('click', async () => {
-            const bdDiv = document.getElementById('bdResults');
-            bdDiv.innerHTML = '<p class="no-results">⏳ Descargando registros más recientes (Prioridad Sheets)...</p>';
-            
-            try {
-                // Modificado: Prioridad Sheets -> fallback Firebase
-                let resultados = await obtenerTodosLosRegistrosCentralizado();
-
-                if (resultados.length === 0) {
-                    bdDiv.innerHTML = '<p class="no-results">📭 La base de datos está vacía o no hay datos locales.</p>';
-                } else {
-                    resultados = eliminarDuplicados(resultados);
-                    resultados = ordenarPorFecha(resultados);
-                    renderTabla(resultados, bdDiv);
-                    window.showToast("¡Lista actualizada correctamente!");
-                }
-            } catch (error) {
-                console.error("Error al cargar los datos: ", error);
-                bdDiv.innerHTML = '<p class="no-results">⚠️ Error al cargar información.</p>';
-            }
-        });
-
-        // ---------------- CODIGO ADMIN EXISTENTE ----------------
-        document.getElementById('btn-importar-sheets').addEventListener('click', async () => {
-            if (!navigator.onLine) {
-                alert("⚠️ Se requiere conexión a internet para importar desde Google Sheets.");
-                return;
-            }
-
-            const status = document.getElementById('import-status');
-            status.innerText = "⏳ Descargando datos desde tu archivo de Google Sheets...";
-            
-            try {
-                const response = await fetch(GOOGLE_SHEETS_URL);
-                const dataSheets = await response.json();
-                
-                status.innerText = `⏳ Evaluando ${dataSheets.length} registros para importación a Firebase...`;
-                let agregados = 0, duplicados = 0;
-                
-                for (const fila of dataSheets) {
-                    const placaRaw = fila.Placa || fila.PLACA || fila.placa;
-                    const placa = placaRaw ? String(placaRaw).replace(/\s+/g, '').toUpperCase() : null;
-                    
-                    let fechaRaw = fila.Fecha || fila.FECHA || fila.fecha;
-                    let fechaStr = null;
-                    
-                    if (fechaRaw) {
-                        if (String(fechaRaw).includes("T")) {
-                            fechaStr = String(fechaRaw).split("T")[0];
-                        } else {
-                            fechaStr = String(fechaRaw);
-                        }
-                    }
-
-                    if (placa && fechaStr) {
-                        const dataEstandar = {
-                            fecha: fechaStr,
-                            placa: placa,
-                            nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || fila.nombre || '',
-                            cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || fila.cedula || '',
-                            marca: fila.Marca || fila.MARCA || fila.marca || '',
-                            linea: fila.Linea || fila.LINEA || fila.linea || '',
-                            kilometraje: fila.Kilometraje || fila.KILOMETRAJE || fila.kilometraje || '',
-                            descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || fila.descripcion || '',
-                            timestamp: new Date()
-                        };
-
-                        const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fechaStr));
-                        const snapshot = await getDocs(q);
-                        
-                        if (snapshot.empty) {
-                            await addDoc(collection(db, "registros_taller"), dataEstandar);
-                            agregados++;
-                        } else {
-                            duplicados++;
-                        }
-                    }
-                }
-                status.style.color = "var(--sheets)";
-                status.innerText = `✅ ¡Sincronización manual exitosa hacia Firebase! ${agregados} nuevos, ${duplicados} ya existían.`;
-                window.showToast("Datos de Sheets sincronizados en el servidor.");
-            } catch (error) {
-                console.error("Error con Sheets: ", error);
-                status.style.color = "var(--secondary)";
-                status.innerText = "❌ Hubo un error al intentar leer tu Google Sheets.";
-            }
-        });
-
-        document.getElementById('btn-importar').addEventListener('click', () => {
-            if (!navigator.onLine) {
-                alert("⚠️ Se requiere conexión a internet para importar bases de datos masivas.");
-                return;
-            }
-
-            const fileInput = document.getElementById('excelFile');
-            const statusText = document.getElementById('import-status');
-            
-            if (fileInput.files.length === 0) {
-                alert("⚠️ Por favor, selecciona un archivo Excel desde tu computadora.");
-                return;
-            }
-
-            statusText.style.color = "var(--primary)";
-            statusText.innerText = "⏳ Leyendo archivo Excel...";
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = async function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
-                const targetSheetName = workbook.SheetNames.find(s => s.toUpperCase().includes('BASE DE DATOS')) || workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[targetSheetName];
-                const excelData = XLSX.utils.sheet_to_json(worksheet);
-                
-                statusText.innerText = `⏳ Procesando ${excelData.length} filas del archivo local...`;
-                let agregados = 0, duplicados = 0;
-
-                for (const fila of excelData) {
-                    const placaRaw = fila.Placa || fila.PLACA;
-                    const placa = placaRaw ? String(placaRaw).replace(/\s+/g, '').toUpperCase() : null;
-                    
-                    let fechaRaw = fila.Fecha || fila.FECHA; 
-                    let fechaStr = null;
-                    
-                    if (fechaRaw) {
-                        if (fechaRaw instanceof Date) {
-                            fechaRaw.setMinutes(fechaRaw.getMinutes() - fechaRaw.getTimezoneOffset());
-                            fechaStr = fechaRaw.toISOString().split('T')[0];
-                        } else {
-                            fechaStr = String(fechaRaw);
-                        }
-                    }
-
-                    if(placa && fechaStr) {
-                        const dataEstandar = {
-                            fecha: fechaStr,
-                            placa: placa,
-                            nombre: fila['NOMBRE Y APELLIDOS'] || fila.Nombre || fila.NOMBRE || '',
-                            cedula: fila['No. IDENTIFICACIÓN'] || fila.Cedula || fila.CEDULA || '',
-                            marca: fila.Marca || fila.MARCA || '',
-                            linea: fila.Linea || fila.LINEA || '',
-                            kilometraje: fila.Kilometraje || fila.KILOMETRAJE || '',
-                            descripcion: fila['DESCRIPCIÓN DEL SERVICIO'] || fila.Descripcion || fila.DESCRIPCION || '',
-                            timestamp: new Date()
-                        };
-
-                        const q = query(collection(db, "registros_taller"), where("placa", "==", placa), where("fecha", "==", fechaStr));
-                        const snapshot = await getDocs(q);
-                        
-                        if (snapshot.empty) {
-                            await addDoc(collection(db, "registros_taller"), dataEstandar);
-                            agregados++;
-                        } else {
-                            duplicados++;
-                        }
-                    }
-                }
-                statusText.style.color = "var(--sheets)";
-                statusText.innerText = `✅ ¡Excel Local Importado! ${agregados} nuevos, ${duplicados} duplicados ignorados.`;
-                window.showToast("Importación de Excel finalizada.");
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        document.getElementById('btn-exportar').addEventListener('click', async () => {
-            const statusText = document.getElementById('import-status');
-            statusText.style.color = "var(--primary)";
-            statusText.innerText = "⏳ Generando archivo Excel...";
-
-            try {
-                // Al exportar también nos aseguramos de tener la versión más reciente
-                const todosLosRegistros = await obtenerTodosLosRegistrosCentralizado();
-                let registrosMap = new Map(); 
-
-                todosLosRegistros.forEach((data) => {
-                    let f_fecha = data.fecha || data.FECHA || data.Fecha || '-';
-                    if (typeof f_fecha === 'number' && !isNaN(f_fecha)) {
-                        let d = new Date(Math.round((f_fecha - 25569) * 86400 * 1000));
-                        d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                        f_fecha = d.toISOString().split('T')[0];
-                    }
-                    
-                    const placa = String(data.placa || data.PLACA || data.Placa || '').replace(/\s+/g, '').toUpperCase();
-                    const claveUnica = `${placa}-${f_fecha}`; 
-
-                    if (!registrosMap.has(claveUnica)) {
-                        registrosMap.set(claveUnica, {
-                            "FECHA": f_fecha,
-                            "PLACA": placa,
-                            "NOMBRE Y APELLIDOS": data.nombre || data['NOMBRE Y APELLIDOS'] || data.NOMBRE || data.cedula || '',
-                            "No. IDENTIFICACIÓN": data.cedula || data['No. IDENTIFICACIÓN'] || data.CEDULA || '',
-                            "MARCA": data.marca || data.MARCA || data.Marca || '',
-                            "LINEA": data.linea || data.LINEA || data.Linea || '',
-                            "KILOMETRAJE": data.kilometraje || data.KILOMETRAJE || data.Kilometraje || '',
-                            "DESCRIPCIÓN DEL SERVICIO": data.descripcion || data['DESCRIPCIÓN DEL SERVICIO'] || data.DESCRIPCION || ''
-                        });
-                    }
-                });
-
-                const registrosExportar = Array.from(registrosMap.values());
-                registrosExportar.sort((a, b) => new Date(b.FECHA || 0) - new Date(a.FECHA || 0));
-
-                if (registrosExportar.length === 0) {
-                    statusText.style.color = "var(--secondary)";
-                    statusText.innerText = "⚠️ No hay datos guardados para exportar.";
-                    return;
-                }
-
-                const worksheet = XLSX.utils.json_to_sheet(registrosExportar);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "BASE DE DATOS");
-                
-                XLSX.writeFile(workbook, "Base_de_Datos_Henry_Cars.xlsx");
-                
-                statusText.style.color = "#10b981";
-                statusText.innerText = `✅ ¡Excel exportado con éxito! Se descargaron ${registrosExportar.length} registros únicos.`;
-                window.showToast("Base de datos exportada con éxito.");
-
-            } catch (error) {
-                console.error("Error al exportar: ", error);
-                statusText.style.color = "var(--secondary)";
-                statusText.innerText = "❌ Hubo un error al intentar generar el archivo Excel.";
-            }
-        });
-    </script>
+      }
+    });
+    await worker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
+      preserve_interword_spaces: '0',
+    });
+
+    const { data: { text } } = await worker.recognize(preprocessed);
+    progressBar.style.width = '100%';
+
+    const placa = extraerPlacaColombiana(text);
+    if (placa) {
+      detectedEl.textContent = placa;
+      statusEl.textContent = '¡Placa detectada con éxito!';
+      detectedPlate = placa;
+      document.getElementById('btn-confirm-plate').classList.add('visible');
+    } else {
+      const raw = text.replace(/\s+/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'').substring(0,7);
+      detectedEl.textContent = raw || '—';
+      statusEl.textContent = raw 
+        ? 'Resultado parcial — verifica y confirma si es correcto'
+        : 'No se detectó una placa válida — intenta de nuevo';
+      if (raw && raw.length >= 5) {
+        detectedPlate = raw;
+        document.getElementById('btn-confirm-plate').classList.add('visible');
+      }
+    }
+    setTimeout(() => { progress.style.display = 'none'; }, 800);
+    await worker.terminate();
+    worker = null;
+  } catch(err) {
+    progressBar.style.width = '0%';
+    progress.style.display = 'none';
+    statusEl.textContent = 'Error en OCR — intenta con otra imagen';
+    console.error('OCR error:', err);
+  }
+}
+
+function preprocessCanvas(srcCanvas) {
+  const dst = document.createElement('canvas');
+  const scale = Math.max(1, Math.min(3, 800 / srcCanvas.width));
+  dst.width = srcCanvas.width * scale;
+  dst.height = srcCanvas.height * scale;
+  const ctx = dst.getContext('2d');
+
+  // Upscale
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(srcCanvas, 0, 0, dst.width, dst.height);
+
+  // Contrast + grayscale + sharpen
+  const imgData = ctx.getImageData(0, 0, dst.width, dst.height);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+    const contrasted = Math.min(255, Math.max(0, (gray - 128) * 1.8 + 128));
+    const thresh = contrasted > 120 ? 255 : 0; // Binarize
+    d[i] = d[i+1] = d[i+2] = thresh;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return dst;
+}
+
+// Colombian plate patterns: ABC123 (old), ABC12D (new)
+function extraerPlacaColombiana(rawText) {
+  const cleaned = rawText.replace(/\s+/g, '').toUpperCase().replace(/O/g,'0').replace(/[^A-Z0-9]/g,'');
+  // Pattern 1: 3 letters + 3 digits (classic)
+  let m = cleaned.match(/[A-Z]{3}[0-9]{3}/);
+  if (m) return m[0];
+  // Pattern 2: 3 letters + 2 digits + 1 letter (new format 2022+)
+  m = cleaned.match(/[A-Z]{3}[0-9]{2}[A-Z]/);
+  if (m) return m[0];
+  // Pattern 3: motorcycle / other – 3 letters + 2 digits
+  m = cleaned.match(/[A-Z]{3}[0-9]{2}/);
+  if (m) return m[0];
+  return null;
+}
+
+function confirmarPlaca() {
+  if (!detectedPlate) return;
+  document.getElementById('placa').value = detectedPlate;
+  cerrarScanner();
+  showToast('Placa ' + detectedPlate + ' cargada correctamente');
+  setTimeout(() => window.autocompletarDatosVehiculo(detectedPlate), 400);
+}
+</script>
+
+<!-- ── FIREBASE + APP LOGIC ── -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, getDocsFromServer, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA5vO1ivxbdtGmTG8R0ZFTi-OBL1yYJzXQ",
+  authDomain: "henrycar-s.firebaseapp.com",
+  projectId: "henrycar-s",
+  storageBucket: "henrycar-s.firebasestorage.app",
+  messagingSenderId: "815993010042",
+  appId: "1:815993010042:web:24a3c529bec4ab5274c8c3"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+enableIndexedDbPersistence(db).catch(err => console.warn('Offline persistence:', err.code));
+
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCoXzEMJ80J8Z1GfbYuXQCiXSBm-Wy78IyKGZlbweBT2kqIPBT84oHQXAzBvih2X3LKQ/exec";
+
+// ─── NORMALIZE ───
+function norm(obj) {
+  let f = obj.fecha || obj.FECHA || obj.Fecha || '';
+  if (String(f).includes('T')) f = String(f).split('T')[0];
+  if (typeof f === 'number') {
+    let d = new Date(Math.round((f - 25569) * 86400 * 1000));
+    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+    f = d.toISOString().split('T')[0];
+  }
+  return {
+    fecha: String(f),
+    placa: String(obj.placa || obj.PLACA || obj.Placa || '').replace(/\s+/g,'').toUpperCase(),
+    nombre: obj['NOMBRE Y APELLIDOS'] || obj.Nombre || obj.NOMBRE || obj.nombre || '',
+    cedula: obj['No. IDENTIFICACIÓN'] || obj.Cedula || obj.CEDULA || obj.cedula || '',
+    marca: obj.Marca || obj.MARCA || obj.marca || '',
+    linea: obj.Linea || obj.LINEA || obj.linea || '',
+    kilometraje: obj.Kilometraje || obj.KILOMETRAJE || obj.kilometraje || '',
+    descripcion: obj['DESCRIPCIÓN DEL SERVICIO'] || obj.Descripcion || obj.DESCRIPCION || obj.descripcion || ''
+  };
+}
+
+// ─── CENTRAL DATA FETCH ───
+async function obtenerTodos() {
+  if (navigator.onLine) {
+    try {
+      const res = await fetch(SHEETS_URL);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const raw = await res.json();
+      return raw.map(norm);
+    } catch(e) { console.warn('Sheets fallback → Firebase', e); }
+  }
+  const snap = navigator.onLine
+    ? await getDocsFromServer(collection(db, 'registros_taller'))
+    : await getDocs(collection(db, 'registros_taller'));
+  return snap.docs.map(d => norm(d.data()));
+}
+
+function dedupe(arr) {
+  const map = new Map();
+  arr.forEach(r => {
+    const key = `${r.placa}-${r.fecha}`;
+    if (!map.has(key)) map.set(key, r);
+  });
+  return [...map.values()];
+}
+
+function sortByDate(arr) {
+  return arr.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+}
+
+function renderTabla(arr, container, resaltarPlaca = null) {
+  if (!arr.length) {
+    container.innerHTML = '<p class="no-data">No se encontraron registros.</p>';
+    return;
+  }
+  const rows = arr.map(r => {
+    const placaCls = resaltarPlaca && r.placa === resaltarPlaca ? 'placa-highlight' : 'placa-badge';
+    const cliente = r.nombre || r.cedula || '<span style="color:var(--text-muted);font-style:italic">No registrado</span>';
+    return `<tr>
+      <td class="date-cell">${r.fecha || '—'}</td>
+      <td><span class="${placaCls}">${r.placa || '—'}</span></td>
+      <td>${cliente}</td>
+      <td>${r.marca} ${r.linea}</td>
+      <td>${r.kilometraje || '—'}</td>
+      <td style="font-size:.82rem;color:var(--text-muted)">${r.descripcion || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Fecha</th><th>Placa</th><th>Cliente</th><th>Marca / Línea</th><th>Km</th><th>Descripción</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// ─── AUTOCOMPLETE ───
+window.autocompletarDatosVehiculo = async function(placa) {
+  if (!placa || placa.length < 5) return;
+  try {
+    const todos = await obtenerTodos();
+    const vehiculo = todos.filter(r => r.placa === placa);
+    if (vehiculo.length) {
+      const latest = sortByDate(vehiculo)[0];
+      const fill = (id, val) => { const el = document.getElementById(id); if (!el.value && val) el.value = val; };
+      fill('nombre', latest.nombre);
+      fill('cedula', latest.cedula);
+      fill('marca', latest.marca);
+      fill('linea', latest.linea);
+      showToast('Datos del vehículo cargados automáticamente');
+    }
+  } catch(e) { console.error('Autocompletar:', e); }
+};
+
+document.getElementById('placa').addEventListener('blur', e => {
+  e.target.value = e.target.value.replace(/\s+/g,'').toUpperCase();
+  window.autocompletarDatosVehiculo(e.target.value);
+});
+
+// ─── SUBMIT FORM ───
+document.getElementById('tallerForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const placa = document.getElementById('placa').value.replace(/\s+/g,'').toUpperCase();
+  const fecha = document.getElementById('fecha').value;
+  const data = {
+    fecha, placa,
+    nombre: document.getElementById('nombre').value,
+    cedula: document.getElementById('cedula').value,
+    marca: document.getElementById('marca').value,
+    linea: document.getElementById('linea').value,
+    kilometraje: document.getElementById('kilometraje').value,
+    descripcion: document.getElementById('descripcion').value,
+    timestamp: new Date()
+  };
+
+  try {
+    const q = query(collection(db, 'registros_taller'), where('placa','==',placa), where('fecha','==',fecha));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      alert(`⚠ Ya existe un registro para la placa ${placa} en la fecha ${fecha}.`);
+      return;
+    }
+    if (navigator.onLine) {
+      fetch(SHEETS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }).catch(()=>{});
+    }
+    await addDoc(collection(db, 'registros_taller'), data);
+    showToast('Vehículo guardado correctamente');
+    document.getElementById('tallerForm').reset();
+    document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+  } catch(err) {
+    console.error(err);
+    alert('Error al guardar. Intenta de nuevo.');
+  }
+});
+
+// ─── SEARCH ───
+document.getElementById('btn-ejecutar-busqueda').addEventListener('click', async () => {
+  const field = document.getElementById('searchField').value;
+  const resultsDiv = document.getElementById('searchResults');
+  let term = '';
+
+  if (field !== 'fecha') {
+    term = document.getElementById('searchValue').value.trim().toLowerCase();
+    if (!term) { alert('Ingresa un término para buscar.'); return; }
+  }
+
+  resultsDiv.innerHTML = '<p class="no-data">⏳ Buscando…</p>';
+
+  try {
+    let todos = await obtenerTodos();
+    let resultados = [];
+
+    if (field === 'fecha') {
+      const ini = document.getElementById('fechaInicio').value;
+      const fin = document.getElementById('fechaFin').value;
+      if (!ini || !fin) { alert('Selecciona ambas fechas.'); return; }
+      if (ini > fin) { alert('La fecha inicial no puede ser mayor que la final.'); return; }
+      resultados = todos.filter(r => r.fecha >= ini && r.fecha <= fin);
+    } else {
+      const terms = field === 'placa' ? [term.replace(/\s+/g,'')] : term.split(' ').filter(Boolean);
+      resultados = todos.filter(r => {
+        let val = String(r[field] || '').toLowerCase();
+        if (field === 'placa') val = val.replace(/\s+/g,'');
+        return terms.every(t => val.includes(t));
+      });
+    }
+
+    resultados = sortByDate(dedupe(resultados));
+
+    if (!resultados.length) {
+      resultsDiv.innerHTML = '<p class="no-data">Sin resultados para esa búsqueda.</p>';
+      return;
+    }
+
+    if (field === 'placa') {
+      const placaKey = resultados[0].placa;
+      resultsDiv.innerHTML = `<div class="history-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="width:18px;height:18px"><path d="M19 17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2z"/></svg>
+        <span>Historial del vehículo: <strong>${placaKey}</strong></span>
+        <span class="count-badge">${resultados.length} registros</span>
+      </div>`;
+      const temp = document.createElement('div');
+      renderTabla(resultados, temp, placaKey);
+      resultsDiv.appendChild(temp);
+    } else {
+      renderTabla(resultados, resultsDiv);
+    }
+  } catch(err) {
+    console.error(err);
+    resultsDiv.innerHTML = '<p class="no-data">Error al buscar. Intenta de nuevo.</p>';
+  }
+});
+
+// ─── HISTORIAL COMPLETO ───
+document.getElementById('btn-recargar-bd').addEventListener('click', async () => {
+  const bdDiv = document.getElementById('bdResults');
+  bdDiv.innerHTML = '<p class="no-data">⏳ Descargando registros…</p>';
+  try {
+    let todos = sortByDate(dedupe(await obtenerTodos()));
+    renderTabla(todos, bdDiv);
+    showToast(`${todos.length} registros cargados`);
+  } catch(e) {
+    bdDiv.innerHTML = '<p class="no-data">Error al cargar los datos.</p>';
+  }
+});
+
+// ─── SINCRONIZAR ───
+window.sincronizarDatos = async function() {
+  if (!navigator.onLine) { showToast('Sin conexión — no se puede sincronizar'); return; }
+  try {
+    const [sheetsRes, fbSnap] = await Promise.all([
+      fetch(SHEETS_URL).then(r => r.json()),
+      getDocsFromServer(collection(db, 'registros_taller'))
+    ]);
+    const mapa = new Map();
+    fbSnap.docs.forEach(doc => {
+      const r = norm(doc.data());
+      mapa.set(`${r.placa}-${r.fecha}`, r);
+    });
+    let added = 0;
+    for (const fila of sheetsRes) {
+      const r = norm(fila);
+      if (!r.placa || !r.fecha) continue;
+      const key = `${r.placa}-${r.fecha}`;
+      if (!mapa.has(key)) {
+        mapa.set(key, r);
+        await addDoc(collection(db, 'registros_taller'), { ...r, timestamp: new Date() });
+        added++;
+      }
+    }
+    showToast(`Sincronización completada — ${added} registros nuevos`);
+  } catch(e) { console.error(e); showToast('Error al sincronizar'); }
+};
+
+// ─── IMPORTAR SHEETS → FIREBASE ───
+document.getElementById('btn-importar-sheets').addEventListener('click', async () => {
+  if (!navigator.onLine) { alert('Requiere conexión a internet.'); return; }
+  setStatus('info', '⏳ Descargando datos de Google Sheets…');
+  try {
+    const raw = await fetch(SHEETS_URL).then(r => r.json());
+    let added = 0, dupes = 0;
+    for (const fila of raw) {
+      const r = norm(fila);
+      if (!r.placa || !r.fecha) continue;
+      const q = query(collection(db, 'registros_taller'), where('placa','==',r.placa), where('fecha','==',r.fecha));
+      const snap = await getDocs(q);
+      if (snap.empty) { await addDoc(collection(db, 'registros_taller'), { ...r, timestamp: new Date() }); added++; }
+      else dupes++;
+    }
+    setStatus('ok', `✓ ${added} registros importados, ${dupes} ya existían.`);
+    showToast('Importación desde Sheets completada');
+  } catch(e) { setStatus('err', 'Error al leer Google Sheets.'); }
+});
+
+// ─── IMPORTAR EXCEL ───
+document.getElementById('btn-importar').addEventListener('click', () => {
+  if (!navigator.onLine) { alert('Requiere conexión a internet.'); return; }
+  const file = document.getElementById('excelFile').files[0];
+  if (!file) { alert('Selecciona un archivo Excel.'); return; }
+  setStatus('info', '⏳ Leyendo archivo…');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array', cellDates:true });
+    const sheetName = wb.SheetNames.find(s => s.toUpperCase().includes('BASE DE DATOS')) || wb.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+    setStatus('info', `⏳ Procesando ${rows.length} filas…`);
+    let added = 0, dupes = 0;
+    for (const fila of rows) {
+      const r = norm(fila);
+      if (r.fecha instanceof Date) {
+        r.fecha.setMinutes(r.fecha.getMinutes() - r.fecha.getTimezoneOffset());
+        r.fecha = r.fecha.toISOString().split('T')[0];
+      }
+      if (!r.placa || !r.fecha) continue;
+      const q = query(collection(db, 'registros_taller'), where('placa','==',r.placa), where('fecha','==',r.fecha));
+      const snap = await getDocs(q);
+      if (snap.empty) { await addDoc(collection(db, 'registros_taller'), { ...r, timestamp: new Date() }); added++; }
+      else dupes++;
+    }
+    setStatus('ok', `✓ ${added} registros importados, ${dupes} duplicados ignorados.`);
+    showToast('Excel importado');
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// ─── EXPORTAR ───
+document.getElementById('btn-exportar').addEventListener('click', async () => {
+  setStatus('info', '⏳ Generando Excel…');
+  try {
+    const todos = sortByDate(dedupe(await obtenerTodos()));
+    if (!todos.length) { setStatus('err', 'No hay datos para exportar.'); return; }
+    const rows = todos.map(r => ({
+      'FECHA': r.fecha,
+      'PLACA': r.placa,
+      'NOMBRE Y APELLIDOS': r.nombre,
+      'No. IDENTIFICACIÓN': r.cedula,
+      'MARCA': r.marca,
+      'LINEA': r.linea,
+      'KILOMETRAJE': r.kilometraje,
+      'DESCRIPCIÓN DEL SERVICIO': r.descripcion
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'BASE DE DATOS');
+    XLSX.writeFile(wb, 'Base_de_Datos_Henry_Cars.xlsx');
+    setStatus('ok', `✓ ${todos.length} registros exportados.`);
+    showToast('Exportación completada');
+  } catch(e) { setStatus('err', 'Error al generar el archivo.'); }
+});
+
+function setStatus(type, msg) {
+  const el = document.getElementById('import-status');
+  el.textContent = msg;
+  el.className = 'visible ' + type;
+}
+</script>
 </body>
 </html>
