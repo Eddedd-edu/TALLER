@@ -886,15 +886,22 @@ document.getElementById('btn-cancelar').addEventListener('click', () => {
 document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
 </script>
 
-<!-- ── SCANNER ── -->
+<!-- ── SCANNER (OPTIMIZADO) ── -->
 <script>
 let scannerStream = null;
+let ocrWorker = null;          // Worker global de Tesseract, reutilizado entre capturas
 let detectedPlate = '';
-let worker = null;
 
+// ─── INICIALIZACIÓN DE CÁMARA ────────────────────────────────────────────────
 async function iniciarCamara() {
   try {
-    const constraints = { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } };
+    const constraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
     scannerStream = await navigator.mediaDevices.getUserMedia(constraints);
     const video = document.getElementById('video-feed');
     video.srcObject = scannerStream;
@@ -902,7 +909,7 @@ async function iniciarCamara() {
     document.getElementById('capture-preview').classList.remove('visible');
     document.getElementById('btn-capture').style.display = 'flex';
     document.getElementById('scan-status-text').textContent = 'Apunta hacia la placa del vehículo';
-  } catch(e) {
+  } catch (e) {
     console.warn('Cámara no disponible:', e);
     document.getElementById('video-feed').style.display = 'none';
     document.getElementById('btn-capture').style.display = 'none';
@@ -910,25 +917,65 @@ async function iniciarCamara() {
   }
 }
 
-function abrirScanner() {
+// ─── ABRIR / CERRAR SCANNER ──────────────────────────────────────────────────
+async function abrirScanner() {
+  // Mostrar overlay y resetear UI
   document.getElementById('scannerOverlay').classList.add('open');
   document.getElementById('scan-detected-text').textContent = '—';
-  document.getElementById('scan-status-text').textContent = 'Captura la placa o sube una imagen';
+  document.getElementById('scan-status-text').textContent = 'Cargando motor de lectura…';
   document.getElementById('scan-progress').style.display = 'none';
   document.getElementById('btn-confirm-plate').classList.remove('visible');
   detectedPlate = '';
-  iniciarCamara();
+
+  // Inicializar el Worker de Tesseract una sola vez (si no existe)
+  if (!ocrWorker) {
+    try {
+      ocrWorker = await Tesseract.createWorker('eng', 1, {
+        logger: m => {
+          if (m.status === 'loading tesseract core' || m.status === 'initializing tesseract') {
+            document.getElementById('scan-status-text').textContent = 'Cargando motor de lectura…';
+          }
+        }
+      });
+      await ocrWorker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
+        preserve_interword_spaces: '0'
+      });
+      document.getElementById('scan-status-text').textContent = 'Motor listo';
+    } catch (err) {
+      console.error('Error al cargar Tesseract:', err);
+      document.getElementById('scan-status-text').textContent = 'Error al cargar el motor';
+      return;
+    }
+  }
+
+  // Iniciar la cámara (no bloquea el worker)
+  await iniciarCamara();
 }
 
-function cerrarScanner() {
+async function cerrarScanner() {
   document.getElementById('scannerOverlay').classList.remove('open');
+
+  // Liberar cámara
   if (scannerStream) {
     scannerStream.getTracks().forEach(t => t.stop());
     scannerStream = null;
   }
-  if (worker) { worker.terminate(); worker = null; }
+
+  // Destruir el Worker para liberar memoria
+  if (ocrWorker) {
+    try {
+      await ocrWorker.terminate();
+    } catch (_) { /* ignorar */ }
+    ocrWorker = null;
+  }
+
+  // Restaurar estado de UI
+  document.getElementById('scan-status-text').textContent = 'Captura la placa o sube una imagen';
 }
 
+// ─── CAPTURAR FOTO ────────────────────────────────────────────────────────────
 function capturarFoto() {
   const video = document.getElementById('video-feed');
   const canvas = document.getElementById('scan-canvas');
@@ -944,9 +991,11 @@ function capturarFoto() {
   procesarImagen(canvas);
 }
 
+// ─── SUBIR IMAGEN DESDE ARCHIVO ──────────────────────────────────────────────
 document.getElementById('file-input-scanner').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
+
   const reader = new FileReader();
   reader.onload = function(ev) {
     const img = new Image();
@@ -964,9 +1013,10 @@ document.getElementById('file-input-scanner').addEventListener('change', functio
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
-  e.target.value = '';
+  e.target.value = ''; // permitir re-subir el mismo archivo
 });
 
+// ─── PROCESAR IMAGEN CON OCR ──────────────────────────────────────────────────
 async function procesarImagen(canvas) {
   const progress = document.getElementById('scan-progress');
   const progressBar = document.getElementById('scan-progress-bar');
@@ -979,28 +1029,33 @@ async function procesarImagen(canvas) {
   detectedEl.textContent = '—';
   document.getElementById('btn-confirm-plate').classList.remove('visible');
 
+  // 1. Preprocesamiento (GPU)
   const preprocessed = preprocessCanvas(canvas);
   progressBar.style.width = '30%';
   statusEl.textContent = 'Reconociendo texto con OCR…';
 
   try {
-    if (worker) { await worker.terminate(); worker = null; }
-    worker = await Tesseract.createWorker('eng', 1, {
+    // Si por algún motivo el worker no existe, lo creamos (caso excepcional)
+    if (!ocrWorker) {
+      ocrWorker = await Tesseract.createWorker('eng', 1);
+      await ocrWorker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
+        preserve_interword_spaces: '0'
+      });
+    }
+
+    // 2. Reconocimiento con logger de progreso
+    const { data: { text } } = await ocrWorker.recognize(preprocessed, {
       logger: m => {
         if (m.status === 'recognizing text') {
           progressBar.style.width = (30 + m.progress * 60) + '%';
         }
       }
     });
-    await worker.setParameters({
-      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
-      preserve_interword_spaces: '0',
-    });
-
-    const { data: { text } } = await worker.recognize(preprocessed);
     progressBar.style.width = '100%';
 
+    // 3. Limpiar y extraer placa colombiana
     const placa = extraerPlacaColombiana(text);
     if (placa) {
       detectedEl.textContent = placa;
@@ -1008,9 +1063,10 @@ async function procesarImagen(canvas) {
       detectedPlate = placa;
       document.getElementById('btn-confirm-plate').classList.add('visible');
     } else {
-      const raw = text.replace(/\s+/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'').substring(0,7);
+      // Fallback: mostrar texto crudo limpio
+      const raw = text.replace(/\s+/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 7);
       detectedEl.textContent = raw || '—';
-      statusEl.textContent = raw 
+      statusEl.textContent = raw
         ? 'Resultado parcial — verifica y confirma si es correcto'
         : 'No se detectó una placa válida — intenta de nuevo';
       if (raw && raw.length >= 5) {
@@ -1018,10 +1074,13 @@ async function procesarImagen(canvas) {
         document.getElementById('btn-confirm-plate').classList.add('visible');
       }
     }
+
+    // Ocultar barra de progreso tras un breve momento
     setTimeout(() => { progress.style.display = 'none'; }, 800);
-    await worker.terminate();
-    worker = null;
-  } catch(err) {
+
+    // ⚠ No se termina el worker → se reutiliza
+
+  } catch (err) {
     progressBar.style.width = '0%';
     progress.style.display = 'none';
     statusEl.textContent = 'Error en OCR — intenta con otra imagen';
@@ -1029,46 +1088,40 @@ async function procesarImagen(canvas) {
   }
 }
 
+// ─── PREPROCESAMIENTO ACELERADO POR GPU ──────────────────────────────────────
 function preprocessCanvas(srcCanvas) {
   const dst = document.createElement('canvas');
+  // Escalamos para mejorar la precisión del OCR (factor entre 1 y 3)
   const scale = Math.max(1, Math.min(3, 800 / srcCanvas.width));
   dst.width = srcCanvas.width * scale;
   dst.height = srcCanvas.height * scale;
   const ctx = dst.getContext('2d');
 
-  // Upscale
+  // Aplicar filtros nativos del navegador → GPU
+  ctx.filter = 'grayscale(100%) contrast(200%) brightness(110%)';
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(srcCanvas, 0, 0, dst.width, dst.height);
 
-  // Contrast + grayscale + sharpen
-  const imgData = ctx.getImageData(0, 0, dst.width, dst.height);
-  const d = imgData.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-    const contrasted = Math.min(255, Math.max(0, (gray - 128) * 1.8 + 128));
-    const thresh = contrasted > 120 ? 255 : 0; // Binarize
-    d[i] = d[i+1] = d[i+2] = thresh;
-  }
-  ctx.putImageData(imgData, 0, 0);
   return dst;
 }
 
-// Colombian plate patterns: ABC123 (old), ABC12D (new)
+// ─── EXTRACCIÓN DE PLACA COLOMBIANA ──────────────────────────────────────────
 function extraerPlacaColombiana(rawText) {
-  const cleaned = rawText.replace(/\s+/g, '').toUpperCase().replace(/O/g,'0').replace(/[^A-Z0-9]/g,'');
-  // Pattern 1: 3 letters + 3 digits (classic)
+  const cleaned = rawText.replace(/\s+/g, '').toUpperCase().replace(/O/g, '0').replace(/[^A-Z0-9]/g, '');
+  // Patrón clásico: 3 letras + 3 dígitos
   let m = cleaned.match(/[A-Z]{3}[0-9]{3}/);
   if (m) return m[0];
-  // Pattern 2: 3 letters + 2 digits + 1 letter (new format 2022+)
+  // Nuevo formato: 3 letras + 2 dígitos + 1 letra
   m = cleaned.match(/[A-Z]{3}[0-9]{2}[A-Z]/);
   if (m) return m[0];
-  // Pattern 3: motorcycle / other – 3 letters + 2 digits
+  // Formato moto: 3 letras + 2 dígitos
   m = cleaned.match(/[A-Z]{3}[0-9]{2}/);
   if (m) return m[0];
   return null;
 }
 
+// ─── CONFIRMAR PLACA Y CERRAR ────────────────────────────────────────────────
 function confirmarPlaca() {
   if (!detectedPlate) return;
   document.getElementById('placa').value = detectedPlate;
